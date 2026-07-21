@@ -55,16 +55,18 @@ Ouvrez http://localhost:3000 — vous êtes redirigé vers `/en` ou `/fr` selon 
 
 ## Synchronisation automatique des données
 
-Quatre jobs tournent via Vercel Cron (définis dans `vercel.json`) :
+Quatre jobs tournent via Vercel Cron (définis dans `vercel.json`), **1×/jour chacun** — limite du plan Vercel **Hobby** (gratuit), qui rejette tout cron plus fréquent :
 
 | Job | Fréquence | Rôle |
 |---|---|---|
-| `sync-tournaments` | toutes les 6 h | Découverte et mise à jour des tournois depuis Liquipedia, recalcul des statuts |
-| `sync-teams` | 1×/jour | Équipes et informations d'organisation |
-| `sync-live` | toutes les 5 min | Statuts des manches + recalcul du classement général (ne fait rien hors tournoi) |
-| `sync-news` | toutes les 2 h | Génération de news à partir des événements observés (début/fin de tournoi) |
+| `sync-tournaments` | 1×/jour (05:00 UTC) | Découverte et mise à jour des tournois depuis Liquipedia, recalcul des statuts |
+| `sync-teams` | 1×/jour (04:30 UTC) | Équipes et informations d'organisation |
+| `sync-live` | 1×/jour (06:00 UTC) | Statuts des manches + recalcul du classement général (ne fait rien hors tournoi) |
+| `sync-news` | 1×/jour (08:15 UTC) | Génération de news à partir des événements observés (début/fin de tournoi) |
 
-- Chaque exécution est journalisée dans `sync_logs`, consultable sur **`/{locale}/admin`** (avec bouton « Forcer la mise à jour » protégé par `ADMIN_TOKEN`).
+⚠️ **Suivi live pendant un tournoi** : avec une seule exécution quotidienne, `sync-live` ne suffit pas à suivre un tournoi en cours. Pendant un match que vous suivez, ouvrez `/{locale}/admin` sur votre téléphone et tapez le bouton **« Live scores »** toutes les quelques minutes pour rafraîchir manuellement le classement — c'est la même route que le cron, juste déclenchée à la demande. Pour un rafraîchissement automatique toutes les 5 minutes, il faut le **plan Vercel Pro** : dans ce cas, changez le schedule de `sync-live` dans `vercel.json` en `*/5 * * * *`.
+
+- Chaque exécution (automatique ou manuelle) est journalisée dans `sync_logs`, consultable sur **`/{locale}/admin`** (bouton « Forcer la mise à jour », protégé par `ADMIN_TOKEN`).
 - Les pages ne lisent **que** la base locale : si l'API Liquipedia est indisponible, le site continue de servir les dernières données connues (fallback naturel).
 - Test manuel d'un job en local :
 
@@ -102,9 +104,7 @@ Quatre jobs tournent via Vercel Cron (définis dans `vercel.json`) :
    | `ADMIN_TOKEN` | Une autre valeur secrète générée aléatoirement |
    | `NEXT_PUBLIC_SITE_URL` | L'URL de production, ex. `https://votre-site.vercel.app` |
 
-3. **Déployer.** `vercel.json` enregistre les 4 crons automatiquement ; Vercel signe chaque appel avec `Authorization: Bearer $CRON_SECRET`, vérifié par `/api/cron/[job]`.
-
-   ⚠️ **Plan Hobby (gratuit) : les cron jobs sont limités à 1 exécution/jour.** Les fréquences de `vercel.json` (toutes les 5 min pour `sync-live`, etc.) nécessitent le **plan Pro**. Sur Hobby, Vercel ramènera silencieusement chaque cron à une fois par jour — utilisable en développement, mais le suivi « live » perdra son intérêt en production. Vérifiez `/{locale}/admin` après déploiement pour confirmer la fréquence réelle observée dans `sync_logs`.
+3. **Déployer.** `vercel.json` enregistre les 4 crons automatiquement (1×/jour chacun, compatible plan Hobby) ; Vercel signe chaque appel avec `Authorization: Bearer $CRON_SECRET`, vérifié par `/api/cron/[job]`. Voir la section « Synchronisation automatique des données » ci-dessus pour le suivi live pendant un tournoi.
 4. **Appliquer le schéma et charger les données.** Une fois le déploiement terminé, ouvrez `https://votre-site.vercel.app/{locale}/admin` (fonctionne depuis un téléphone, aucun terminal requis), saisissez `ADMIN_TOKEN`, puis cliquez « Apply schema (migrations) » et, si souhaité, « Seed demo data ».
 5. **Vérifier** : toujours sur `/{locale}/admin`, lancez chaque job de synchronisation une fois manuellement pour confirmer que la connexion à la base et à Liquipedia fonctionne en production.
 

@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/cron/sync-tournaments",
-      "schedule": "0 */6 * * *"
+      "schedule": "0 5 * * *"
     },
     {
       "path": "/api/cron/sync-teams",
@@ -10,11 +10,11 @@
     },
     {
       "path": "/api/cron/sync-live",
-      "schedule": "*/5 * * * *"
+      "schedule": "0 6 * * *"
     },
     {
       "path": "/api/cron/sync-news",
-      "schedule": "15 */2 * * *"
+      "schedule": "15 8 * * *"
     }
   ]
 }
