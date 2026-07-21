@@ -19,9 +19,14 @@ import {
  * Meant for a fresh development/demo database, not for a production
  * database that already holds real synced data.
  */
-export async function seedDemoData(): Promise<{items: number}> {
+/**
+ * Deletes every row from every table. Used to return to a clean slate
+ * before pulling real data from Liquipedia, since the demo dataset's fake
+ * teams/tournaments would otherwise sit alongside the real ones (they
+ * don't collide on liquipedia_page, so upserts wouldn't remove them).
+ */
+export async function clearAllData(): Promise<void> {
   const db = getDb();
-
   await db.delete(schema.translations);
   await db.delete(schema.newsTags);
   await db.delete(schema.news);
@@ -33,6 +38,12 @@ export async function seedDemoData(): Promise<{items: number}> {
   await db.delete(schema.players);
   await db.delete(schema.tournaments);
   await db.delete(schema.teams);
+}
+
+export async function seedDemoData(): Promise<{items: number}> {
+  const db = getDb();
+
+  await clearAllData();
 
   let items = 0;
 

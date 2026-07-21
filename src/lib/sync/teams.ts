@@ -54,6 +54,7 @@ export async function syncTeams(): Promise<{items: number; partial?: boolean}> {
           fullName: parsed.fullName,
           region: parsed.region,
           orgName: parsed.orgName,
+          logoUrl: parsed.logoUrl,
           updatedAt: new Date()
         }
       });

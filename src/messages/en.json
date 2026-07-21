@@ -172,6 +172,8 @@
     "setupSubtitle": "First-time setup, or after a schema change — no terminal required.",
     "applyMigrations": "Apply schema (migrations)",
     "seedDemoData": "Seed demo data",
-    "seedConfirm": "This will WIPE all existing teams, tournaments, matches and news and replace them with the sample dataset. Continue?"
+    "seedConfirm": "This will WIPE all existing teams, tournaments, matches and news and replace them with the sample dataset. Continue?",
+    "resetData": "Clear all data",
+    "resetConfirm": "This will PERMANENTLY DELETE every team, tournament, match and news item — use this before syncing real data from Liquipedia so the sample teams don't linger. Continue?"
   }
 }

@@ -172,6 +172,8 @@
     "setupSubtitle": "Première installation, ou après un changement de schéma — sans terminal.",
     "applyMigrations": "Appliquer le schéma (migrations)",
     "seedDemoData": "Charger les données de démo",
-    "seedConfirm": "Ceci va SUPPRIMER toutes les équipes, tournois, matchs et news existants pour les remplacer par le jeu de données d'exemple. Continuer ?"
+    "seedConfirm": "Ceci va SUPPRIMER toutes les équipes, tournois, matchs et news existants pour les remplacer par le jeu de données d'exemple. Continuer ?",
+    "resetData": "Vider toutes les données",
+    "resetConfirm": "Ceci va SUPPRIMER DÉFINITIVEMENT toutes les équipes, tournois, matchs et news — à utiliser avant de synchroniser les vraies données Liquipedia pour ne pas garder les équipes d'exemple. Continuer ?"
   }
 }

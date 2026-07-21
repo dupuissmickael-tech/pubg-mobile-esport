@@ -41,7 +41,7 @@ export default function AdminPanel() {
   }
 
   async function runSetupAction(
-    action: 'migrate' | 'seed',
+    action: 'migrate' | 'seed' | 'reset',
     confirmMessage?: string
   ) {
     if (confirmMessage && !window.confirm(confirmMessage)) return;
@@ -103,6 +103,14 @@ export default function AdminPanel() {
             className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-semibold transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:hover:bg-zinc-800"
           >
             {running === 'seed' ? t('running') : t('seedDemoData')}
+          </button>
+          <button
+            type="button"
+            disabled={!token || running !== null}
+            onClick={() => runSetupAction('reset', t('resetConfirm'))}
+            className="rounded-lg border border-red-500/40 px-4 py-2 text-sm font-semibold text-red-500 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {running === 'reset' ? t('running') : t('resetData')}
           </button>
         </div>
       </div>
