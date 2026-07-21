@@ -60,7 +60,7 @@ export async function syncLive(): Promise<{items: number; partial?: boolean}> {
       ) agg
       where tt.tournament_id = ${t.id} and tt.team_id = agg.team_id
     `);
-    items += result.rowCount ?? 0;
+    items += result.count ?? 0;
   }
 
   return {items};

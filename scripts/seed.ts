@@ -6,8 +6,8 @@
  * for a fresh development database — not for production.
  */
 import 'dotenv/config';
-import {neon} from '@neondatabase/serverless';
-import {drizzle} from 'drizzle-orm/neon-http';
+import postgres from 'postgres';
+import {drizzle} from 'drizzle-orm/postgres-js';
 import {
   demoMatches,
   demoNews,
@@ -24,7 +24,8 @@ async function main() {
     console.error('DATABASE_URL is required. Copy .env.example to .env first.');
     process.exit(1);
   }
-  const db = drizzle(neon(process.env.DATABASE_URL), {schema});
+  const client = postgres(process.env.DATABASE_URL, {max: 1});
+  const db = drizzle(client, {schema});
 
   console.log('Clearing existing data…');
   await db.delete(schema.translations);
@@ -42,6 +43,8 @@ async function main() {
   console.log('Inserting teams and rosters…');
   const teamIdBySlug = new Map<string, string>();
   const teamIdByDemoId = new Map<string, string>();
+  const teamIdByName = new Map<string, string>();
+  const playerIdByKey = new Map<string, string>();
   for (const team of demoTeams) {
     const detail = demoTeamDetail(team.slug)!;
     const [inserted] = await db
@@ -57,13 +60,37 @@ async function main() {
       .returning({id: schema.teams.id});
     teamIdBySlug.set(team.slug, inserted.id);
     teamIdByDemoId.set(team.id, inserted.id);
+    teamIdByName.set(team.name, inserted.id);
     for (const player of detail.roster) {
-      await db.insert(schema.players).values({
-        teamId: inserted.id,
-        nickname: player.nickname,
-        realName: player.realName,
-        role: player.role,
-        countryCode: player.countryCode
+      const [insertedPlayer] = await db
+        .insert(schema.players)
+        .values({
+          teamId: inserted.id,
+          nickname: player.nickname,
+          realName: player.realName,
+          role: player.role,
+          countryCode: player.countryCode
+        })
+        .returning({id: schema.players.id});
+      playerIdByKey.set(`${team.slug}:${player.nickname}`, insertedPlayer.id);
+    }
+  }
+
+  console.log('Inserting transfers…');
+  for (const team of demoTeams) {
+    const detail = demoTeamDetail(team.slug)!;
+    for (const transfer of detail.transfers) {
+      const playerId = playerIdByKey.get(`${team.slug}:${transfer.playerNickname}`);
+      if (!playerId) continue;
+      await db.insert(schema.transfers).values({
+        playerId,
+        fromTeamId: transfer.fromTeamName
+          ? (teamIdByName.get(transfer.fromTeamName) ?? null)
+          : null,
+        toTeamId: transfer.toTeamName
+          ? (teamIdByName.get(transfer.toTeamName) ?? null)
+          : null,
+        transferDate: transfer.transferDate
       });
     }
   }
@@ -177,6 +204,7 @@ async function main() {
   }
 
   console.log('Done. Seeded', demoTeams.length, 'teams and', demoTournaments().length, 'tournaments.');
+  await client.end();
 }
 
 main().catch((error) => {

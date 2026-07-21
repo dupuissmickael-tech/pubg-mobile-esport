@@ -1,8 +1,8 @@
-import {neon} from '@neondatabase/serverless';
-import {drizzle, type NeonHttpDatabase} from 'drizzle-orm/neon-http';
+import postgres from 'postgres';
+import {drizzle, type PostgresJsDatabase} from 'drizzle-orm/postgres-js';
 import * as schema from './schema';
 
-let cached: NeonHttpDatabase<typeof schema> | null = null;
+let cached: PostgresJsDatabase<typeof schema> | null = null;
 
 /**
  * True when a real database is configured. Without DATABASE_URL the site
@@ -13,15 +13,20 @@ export function hasDatabase(): boolean {
   return Boolean(process.env.DATABASE_URL);
 }
 
-export function getDb(): NeonHttpDatabase<typeof schema> {
+/**
+ * Uses the standard PostgreSQL wire protocol (via postgres.js) rather than
+ * a provider-specific HTTP driver, so the same code works unmodified against
+ * Neon, Supabase, or any PostgreSQL instance.
+ */
+export function getDb(): PostgresJsDatabase<typeof schema> {
   if (!process.env.DATABASE_URL) {
     throw new Error(
       'DATABASE_URL is not set. Configure it or rely on demo mode.'
     );
   }
   if (!cached) {
-    const sql = neon(process.env.DATABASE_URL);
-    cached = drizzle(sql, {schema});
+    const client = postgres(process.env.DATABASE_URL, {max: 1});
+    cached = drizzle(client, {schema});
   }
   return cached;
 }
