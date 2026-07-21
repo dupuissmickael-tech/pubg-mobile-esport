@@ -89,10 +89,27 @@ Quatre jobs tournent via Vercel Cron (définis dans `vercel.json`) :
 
 ## Déploiement sur Vercel
 
-1. Importer le dépôt dans Vercel.
-2. Renseigner les variables d'environnement du tableau ci-dessus (Production + Preview).
-3. Déployer : `vercel.json` enregistre les crons automatiquement (Vercel envoie `Authorization: Bearer $CRON_SECRET` aux routes cron).
-4. Appliquer le schéma sur la base de production : `DATABASE_URL=... npm run db:push` (puis `db:seed` si souhaité).
+1. **Importer le dépôt** dans Vercel ([vercel.com/new](https://vercel.com/new)) — le framework Next.js est détecté automatiquement, aucun réglage de build à changer.
+2. **Renseigner les variables d'environnement** (Project Settings → Environment Variables), pour Production **et** Preview :
+
+   | Variable | Valeur |
+   |---|---|
+   | `DATABASE_URL` | Chaîne de connexion **pooled** de Neon (celle avec `-pooler` dans le nom d'hôte — recommandée pour les fonctions serverless) |
+   | `LIQUIPEDIA_USER_AGENT` | `PMEsportHub/1.0 (votre@email.com)` |
+   | `CRON_SECRET` | Une valeur secrète générée aléatoirement |
+   | `ADMIN_TOKEN` | Une autre valeur secrète générée aléatoirement |
+   | `NEXT_PUBLIC_SITE_URL` | L'URL de production, ex. `https://votre-site.vercel.app` |
+
+3. **Déployer.** `vercel.json` enregistre les 4 crons automatiquement ; Vercel signe chaque appel avec `Authorization: Bearer $CRON_SECRET`, vérifié par `/api/cron/[job]`.
+
+   ⚠️ **Plan Hobby (gratuit) : les cron jobs sont limités à 1 exécution/jour.** Les fréquences de `vercel.json` (toutes les 5 min pour `sync-live`, etc.) nécessitent le **plan Pro**. Sur Hobby, Vercel ramènera silencieusement chaque cron à une fois par jour — utilisable en développement, mais le suivi « live » perdra son intérêt en production. Vérifiez `/{locale}/admin` après déploiement pour confirmer la fréquence réelle observée dans `sync_logs`.
+4. **Appliquer le schéma et charger les données** depuis votre machine, en pointant vers la base de production :
+
+   ```bash
+   DATABASE_URL="<chaîne_pooled_neon>" npm run db:push
+   DATABASE_URL="<chaîne_pooled_neon>" npm run db:seed   # optionnel : jeu de données d'exemple
+   ```
+5. **Vérifier** : ouvrez `/{locale}/admin` sur le site déployé, entrez `ADMIN_TOKEN`, lancez chaque job une fois manuellement pour confirmer que la connexion à la base et à Liquipedia fonctionne en production.
 
 ## Commandes
 

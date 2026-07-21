@@ -25,7 +25,14 @@ export function getDb(): PostgresJsDatabase<typeof schema> {
     );
   }
   if (!cached) {
-    const client = postgres(process.env.DATABASE_URL, {max: 1});
+    // max: 1 and prepare: false suit a serverless deployment (Vercel
+    // functions are short-lived, and Neon/Supabase pooled connection
+    // strings run in PgBouncer transaction mode, which rejects prepared
+    // statements).
+    const client = postgres(process.env.DATABASE_URL, {
+      max: 1,
+      prepare: false
+    });
     cached = drizzle(client, {schema});
   }
   return cached;
