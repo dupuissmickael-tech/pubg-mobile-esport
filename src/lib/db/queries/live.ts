@@ -1,5 +1,6 @@
 import {and, asc, desc, eq, gte, inArray, lte} from 'drizzle-orm';
 import {getDb, hasDatabase} from '..';
+import {safeQuery} from '../safe-query';
 import {matchResults, matches, teams, tournamentTeams, tournaments} from '../schema';
 import {demoLiveState, demoMatches} from '@/lib/demo-data';
 import type {
@@ -49,15 +50,17 @@ export async function getLiveMatch(): Promise<MatchView | null> {
     const live = demoMatches().find((m) => m.status === 'live');
     return live ?? null;
   }
-  const db = getDb();
-  const [row] = await db
-    .select(matchViewSelection)
-    .from(matches)
-    .innerJoin(tournaments, eq(matches.tournamentId, tournaments.id))
-    .where(eq(matches.status, 'live'))
-    .orderBy(desc(matches.scheduledAt))
-    .limit(1);
-  return row ? toMatchView(row) : null;
+  return safeQuery(async () => {
+    const db = getDb();
+    const [row] = await db
+      .select(matchViewSelection)
+      .from(matches)
+      .innerJoin(tournaments, eq(matches.tournamentId, tournaments.id))
+      .where(eq(matches.status, 'live'))
+      .orderBy(desc(matches.scheduledAt))
+      .limit(1);
+    return row ? toMatchView(row) : null;
+  }, null);
 }
 
 /** Matches scheduled (or live) within the next 48 hours. */
@@ -76,20 +79,22 @@ export async function getUpcomingMatches(): Promise<MatchView[]> {
       .sort((a, b) => a.scheduledAt.localeCompare(b.scheduledAt));
   }
 
-  const db = getDb();
-  const rows = await db
-    .select(matchViewSelection)
-    .from(matches)
-    .innerJoin(tournaments, eq(matches.tournamentId, tournaments.id))
-    .where(
-      and(
-        inArray(matches.status, ['scheduled', 'live']),
-        gte(matches.scheduledAt, new Date(nowMs - 3 * 3600_000)),
-        lte(matches.scheduledAt, horizon)
+  return safeQuery(async () => {
+    const db = getDb();
+    const rows = await db
+      .select(matchViewSelection)
+      .from(matches)
+      .innerJoin(tournaments, eq(matches.tournamentId, tournaments.id))
+      .where(
+        and(
+          inArray(matches.status, ['scheduled', 'live']),
+          gte(matches.scheduledAt, new Date(nowMs - 3 * 3600_000)),
+          lte(matches.scheduledAt, horizon)
+        )
       )
-    )
-    .orderBy(asc(matches.scheduledAt));
-  return rows.map(toMatchView);
+      .orderBy(asc(matches.scheduledAt));
+    return rows.map(toMatchView);
+  }, []);
 }
 
 /**
@@ -102,6 +107,10 @@ export async function getLiveState(): Promise<LiveState | null> {
     return demoLiveState();
   }
 
+  return safeQuery(() => fetchLiveState(), null);
+}
+
+async function fetchLiveState(): Promise<LiveState | null> {
   const db = getDb();
   const [tournament] = await db
     .select()

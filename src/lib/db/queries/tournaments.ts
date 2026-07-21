@@ -1,5 +1,6 @@
 import {and, asc, desc, eq, sql} from 'drizzle-orm';
 import {getDb, hasDatabase} from '..';
+import {safeQuery} from '../safe-query';
 import {teams, tournamentTeams, tournaments} from '../schema';
 import {demoTournamentDetail, demoTournaments} from '@/lib/demo-data';
 import type {
@@ -48,35 +49,37 @@ export async function listTournaments(
         (!filters.status || t.status === filters.status)
     );
   } else {
-    const db = getDb();
-    const conditions = [];
-    if (filters.region) conditions.push(eq(tournaments.region, filters.region));
-    if (filters.tier) conditions.push(eq(tournaments.tier, filters.tier));
-    if (filters.status) conditions.push(eq(tournaments.status, filters.status));
+    list = await safeQuery(async () => {
+      const db = getDb();
+      const conditions = [];
+      if (filters.region) conditions.push(eq(tournaments.region, filters.region));
+      if (filters.tier) conditions.push(eq(tournaments.tier, filters.tier));
+      if (filters.status) conditions.push(eq(tournaments.status, filters.status));
 
-    const rows = await db
-      .select({
-        id: tournaments.id,
-        slug: tournaments.slug,
-        name: tournaments.name,
-        tier: tournaments.tier,
-        region: tournaments.region,
-        startDate: tournaments.startDate,
-        endDate: tournaments.endDate,
-        prizePool: tournaments.prizePool,
-        prizeCurrency: tournaments.prizeCurrency,
-        status: tournaments.status,
-        streamUrl: tournaments.streamUrl,
-        teamCount: sql<number>`(
-          select count(*)::int from ${tournamentTeams}
-          where ${tournamentTeams.tournamentId} = ${tournaments.id}
-        )`
-      })
-      .from(tournaments)
-      .where(conditions.length ? and(...conditions) : undefined)
-      .orderBy(desc(tournaments.startDate));
+      const rows = await db
+        .select({
+          id: tournaments.id,
+          slug: tournaments.slug,
+          name: tournaments.name,
+          tier: tournaments.tier,
+          region: tournaments.region,
+          startDate: tournaments.startDate,
+          endDate: tournaments.endDate,
+          prizePool: tournaments.prizePool,
+          prizeCurrency: tournaments.prizeCurrency,
+          status: tournaments.status,
+          streamUrl: tournaments.streamUrl,
+          teamCount: sql<number>`(
+            select count(*)::int from ${tournamentTeams}
+            where ${tournamentTeams.tournamentId} = ${tournaments.id}
+          )`
+        })
+        .from(tournaments)
+        .where(conditions.length ? and(...conditions) : undefined)
+        .orderBy(desc(tournaments.startDate));
 
-    list = rows.map((r) => ({...r, prizePool: r.prizePool ? Number(r.prizePool) : null}));
+      return rows.map((r) => ({...r, prizePool: r.prizePool ? Number(r.prizePool) : null}));
+    }, []);
   }
 
   const translated = await loadTranslations(
@@ -98,51 +101,53 @@ export async function getTournamentDetail(
   if (!hasDatabase()) {
     detail = demoTournamentDetail(slug);
   } else {
-    const db = getDb();
-    const [row] = await db
-      .select()
-      .from(tournaments)
-      .where(eq(tournaments.slug, slug))
-      .limit(1);
-    if (!row) return null;
+    detail = await safeQuery(async () => {
+      const db = getDb();
+      const [row] = await db
+        .select()
+        .from(tournaments)
+        .where(eq(tournaments.slug, slug))
+        .limit(1);
+      if (!row) return null;
 
-    const participants = await db
-      .select({
-        id: teams.id,
-        slug: teams.slug,
-        name: teams.name,
-        logoUrl: teams.logoUrl,
-        region: teams.region,
-        orgName: teams.orgName,
-        seed: tournamentTeams.seed,
-        finalRank: tournamentTeams.finalRank,
-        totalPoints: tournamentTeams.totalPoints,
-        totalKills: tournamentTeams.totalKills
-      })
-      .from(tournamentTeams)
-      .innerJoin(teams, eq(tournamentTeams.teamId, teams.id))
-      .where(eq(tournamentTeams.tournamentId, row.id))
-      .orderBy(
-        asc(sql`coalesce(${tournamentTeams.finalRank}, 999)`),
-        desc(tournamentTeams.totalPoints)
-      );
+      const participants = await db
+        .select({
+          id: teams.id,
+          slug: teams.slug,
+          name: teams.name,
+          logoUrl: teams.logoUrl,
+          region: teams.region,
+          orgName: teams.orgName,
+          seed: tournamentTeams.seed,
+          finalRank: tournamentTeams.finalRank,
+          totalPoints: tournamentTeams.totalPoints,
+          totalKills: tournamentTeams.totalKills
+        })
+        .from(tournamentTeams)
+        .innerJoin(teams, eq(tournamentTeams.teamId, teams.id))
+        .where(eq(tournamentTeams.tournamentId, row.id))
+        .orderBy(
+          asc(sql`coalesce(${tournamentTeams.finalRank}, 999)`),
+          desc(tournamentTeams.totalPoints)
+        );
 
-    detail = {
-      id: row.id,
-      slug: row.slug,
-      name: row.name,
-      tier: row.tier,
-      region: row.region,
-      startDate: row.startDate,
-      endDate: row.endDate,
-      prizePool: row.prizePool ? Number(row.prizePool) : null,
-      prizeCurrency: row.prizeCurrency,
-      status: row.status,
-      streamUrl: row.streamUrl,
-      format: row.format,
-      teamCount: participants.length,
-      teams: participants
-    };
+      return {
+        id: row.id,
+        slug: row.slug,
+        name: row.name,
+        tier: row.tier,
+        region: row.region,
+        startDate: row.startDate,
+        endDate: row.endDate,
+        prizePool: row.prizePool ? Number(row.prizePool) : null,
+        prizeCurrency: row.prizeCurrency,
+        status: row.status,
+        streamUrl: row.streamUrl,
+        format: row.format,
+        teamCount: participants.length,
+        teams: participants
+      };
+    }, null);
   }
 
   if (!detail) return null;

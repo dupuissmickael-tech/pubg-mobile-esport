@@ -1,5 +1,6 @@
 import {desc, eq, inArray} from 'drizzle-orm';
 import {getDb, hasDatabase} from '..';
+import {safeQuery} from '../safe-query';
 import {news, newsTags, tags} from '../schema';
 import {demoNews} from '@/lib/demo-data';
 import type {NewsItemView} from '@/lib/types';
@@ -39,26 +40,28 @@ export async function listNews(
   if (!hasDatabase()) {
     items = demoNews();
   } else {
-    const db = getDb();
-    const rows = await db
-      .select()
-      .from(news)
-      .orderBy(desc(news.publishedAt))
-      .limit(limit);
-    items = await attachTags(
-      rows.map((r) => ({
-        id: r.id,
-        slug: r.slug,
-        title: r.title,
-        excerpt: r.excerpt,
-        body: r.body,
-        coverUrl: r.coverUrl,
-        sourceName: r.sourceName,
-        sourceUrl: r.sourceUrl,
-        publishedAt: r.publishedAt.toISOString(),
-        tags: []
-      }))
-    );
+    items = await safeQuery(async () => {
+      const db = getDb();
+      const rows = await db
+        .select()
+        .from(news)
+        .orderBy(desc(news.publishedAt))
+        .limit(limit);
+      return attachTags(
+        rows.map((r) => ({
+          id: r.id,
+          slug: r.slug,
+          title: r.title,
+          excerpt: r.excerpt,
+          body: r.body,
+          coverUrl: r.coverUrl,
+          sourceName: r.sourceName,
+          sourceUrl: r.sourceUrl,
+          publishedAt: r.publishedAt.toISOString(),
+          tags: []
+        }))
+      );
+    }, []);
   }
 
   if (tagSlug) {
@@ -87,14 +90,15 @@ export async function getNewsItem(
   if (!hasDatabase()) {
     item = demoNews().find((n) => n.slug === slug);
   } else {
-    const db = getDb();
-    const [row] = await db
-      .select()
-      .from(news)
-      .where(eq(news.slug, slug))
-      .limit(1);
-    if (row) {
-      [item] = await attachTags([
+    item = await safeQuery(async () => {
+      const db = getDb();
+      const [row] = await db
+        .select()
+        .from(news)
+        .where(eq(news.slug, slug))
+        .limit(1);
+      if (!row) return undefined;
+      const [tagged] = await attachTags([
         {
           id: row.id,
           slug: row.slug,
@@ -108,7 +112,8 @@ export async function getNewsItem(
           tags: []
         }
       ]);
-    }
+      return tagged;
+    }, undefined);
   }
 
   if (!item) return null;
