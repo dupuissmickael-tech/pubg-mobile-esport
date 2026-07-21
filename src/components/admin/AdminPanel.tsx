@@ -40,6 +40,33 @@ export default function AdminPanel() {
     }
   }
 
+  async function runSetupAction(
+    action: 'migrate' | 'seed',
+    confirmMessage?: string
+  ) {
+    if (confirmMessage && !window.confirm(confirmMessage)) return;
+    setRunning(action);
+    setFeedback(null);
+    try {
+      const res = await fetch(`/api/admin/${action}`, {
+        method: 'POST',
+        headers: {Authorization: `Bearer ${token}`}
+      });
+      const data = await res.json();
+      if (!res.ok || data.status === 'error') {
+        setFeedback(`${t('failed')}: ${data.error ?? data.errorMessage ?? res.status}`);
+      } else {
+        setFeedback(
+          `${t('success')} — ${action}${typeof data.items === 'number' ? `: ${data.items} rows` : ''}`
+        );
+      }
+    } catch (error) {
+      setFeedback(`${t('failed')}: ${String(error)}`);
+    } finally {
+      setRunning(null);
+    }
+  }
+
   return (
     <section className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
       <h2 className="mb-4 font-semibold">{t('forceSync')}</h2>
@@ -55,6 +82,31 @@ export default function AdminPanel() {
           className="w-full max-w-sm rounded-lg border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-950"
         />
       </label>
+      <div className="mb-5 border-b border-zinc-200 pb-5 dark:border-zinc-800">
+        <h3 className="mb-1 text-sm font-semibold">{t('setupTitle')}</h3>
+        <p className="mb-3 text-xs text-zinc-500 dark:text-zinc-400">
+          {t('setupSubtitle')}
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            disabled={!token || running !== null}
+            onClick={() => runSetupAction('migrate')}
+            className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-semibold transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:hover:bg-zinc-800"
+          >
+            {running === 'migrate' ? t('running') : t('applyMigrations')}
+          </button>
+          <button
+            type="button"
+            disabled={!token || running !== null}
+            onClick={() => runSetupAction('seed', t('seedConfirm'))}
+            className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-semibold transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:hover:bg-zinc-800"
+          >
+            {running === 'seed' ? t('running') : t('seedDemoData')}
+          </button>
+        </div>
+      </div>
+
       <div className="flex flex-wrap gap-2">
         {JOBS.map((job) => (
           <button

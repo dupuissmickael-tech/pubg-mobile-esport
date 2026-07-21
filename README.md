@@ -39,17 +39,19 @@ Ouvrez http://localhost:3000 — vous êtes redirigé vers `/en` ou `/fr` selon 
    | `LIQUIPEDIA_USER_AGENT` | User-Agent identifiable **exigé par Liquipedia** — format `MonApp/1.0 (email@contact)` |
    | `LIQUIPEDIA_API_KEY` | Optionnel, si un accès LPDB vous a été accordé |
    | `CRON_SECRET` | Secret protégeant les routes `/api/cron/*` |
-   | `ADMIN_TOKEN` | Token protégeant la page `/admin` et `/api/admin/sync` |
+   | `ADMIN_TOKEN` | Token protégeant la page `/admin` et les routes `/api/admin/*` |
    | `NEXT_PUBLIC_SITE_URL` | URL canonique du site (RSS, sitemap) |
 
-3. **Créer les tables et charger les données d'exemple** :
+3. **Créer les tables et charger les données d'exemple.** Deux méthodes équivalentes :
 
-   ```bash
-   npm run db:push    # applique le schéma Drizzle à la base
-   npm run db:seed    # insère le jeu de données d'exemple
-   ```
+   - **Depuis un terminal** :
+     ```bash
+     npm run db:push    # applique le schéma Drizzle à la base
+     npm run db:seed    # insère le jeu de données d'exemple
+     ```
+   - **Sans terminal, depuis `/{locale}/admin`** (utile en déployant depuis un téléphone) : ouvrez la page, saisissez `ADMIN_TOKEN`, puis cliquez « Apply schema (migrations) » et « Seed demo data ». Ces boutons appellent respectivement `/api/admin/migrate` (applique les fichiers SQL de `drizzle/`, générés par `npm run db:generate`) et `/api/admin/seed` (vide puis recharge le jeu de données d'exemple).
 
-   Pour un workflow avec migrations versionnées : `npm run db:generate` puis `npm run db:migrate`.
+   ⚠️ Ces deux méthodes nécessitent que l'environnement d'exécution ait un accès réseau direct à la base (c'est le cas de Vercel et de votre machine ; ce n'est **pas** toujours le cas d'un environnement sandboxé dont la politique réseau bloque les connexions brutes vers des bases externes).
 
 ## Synchronisation automatique des données
 
@@ -103,13 +105,8 @@ Quatre jobs tournent via Vercel Cron (définis dans `vercel.json`) :
 3. **Déployer.** `vercel.json` enregistre les 4 crons automatiquement ; Vercel signe chaque appel avec `Authorization: Bearer $CRON_SECRET`, vérifié par `/api/cron/[job]`.
 
    ⚠️ **Plan Hobby (gratuit) : les cron jobs sont limités à 1 exécution/jour.** Les fréquences de `vercel.json` (toutes les 5 min pour `sync-live`, etc.) nécessitent le **plan Pro**. Sur Hobby, Vercel ramènera silencieusement chaque cron à une fois par jour — utilisable en développement, mais le suivi « live » perdra son intérêt en production. Vérifiez `/{locale}/admin` après déploiement pour confirmer la fréquence réelle observée dans `sync_logs`.
-4. **Appliquer le schéma et charger les données** depuis votre machine, en pointant vers la base de production :
-
-   ```bash
-   DATABASE_URL="<chaîne_pooled_neon>" npm run db:push
-   DATABASE_URL="<chaîne_pooled_neon>" npm run db:seed   # optionnel : jeu de données d'exemple
-   ```
-5. **Vérifier** : ouvrez `/{locale}/admin` sur le site déployé, entrez `ADMIN_TOKEN`, lancez chaque job une fois manuellement pour confirmer que la connexion à la base et à Liquipedia fonctionne en production.
+4. **Appliquer le schéma et charger les données.** Une fois le déploiement terminé, ouvrez `https://votre-site.vercel.app/{locale}/admin` (fonctionne depuis un téléphone, aucun terminal requis), saisissez `ADMIN_TOKEN`, puis cliquez « Apply schema (migrations) » et, si souhaité, « Seed demo data ».
+5. **Vérifier** : toujours sur `/{locale}/admin`, lancez chaque job de synchronisation une fois manuellement pour confirmer que la connexion à la base et à Liquipedia fonctionne en production.
 
 ## Commandes
 
@@ -117,9 +114,10 @@ Quatre jobs tournent via Vercel Cron (définis dans `vercel.json`) :
 |---|---|
 | `npm run dev` | Serveur de développement |
 | `npm run build` / `npm start` | Build et serveur de production |
-| `npm run db:push` | Applique le schéma à la base |
-| `npm run db:generate` / `db:migrate` | Génère / applique les migrations SQL |
-| `npm run db:seed` | Charge le jeu de données d'exemple |
+| `npm run db:push` | Applique le schéma à la base directement (dev rapide) |
+| `npm run db:generate` | Génère les fichiers de migration SQL dans `drizzle/` (à committer) |
+| `npm run db:migrate` | Applique les migrations de `drizzle/` (aussi disponible via le bouton `/admin`) |
+| `npm run db:seed` | Charge le jeu de données d'exemple (aussi disponible via le bouton `/admin`) |
 
 ## Structure du projet
 

@@ -167,6 +167,11 @@
     "tokenPlaceholder": "Saisir la valeur de ADMIN_TOKEN",
     "running": "En cours…",
     "success": "Job terminé avec succès",
-    "failed": "Le job a échoué"
+    "failed": "Le job a échoué",
+    "setupTitle": "Initialisation de la base",
+    "setupSubtitle": "Première installation, ou après un changement de schéma — sans terminal.",
+    "applyMigrations": "Appliquer le schéma (migrations)",
+    "seedDemoData": "Charger les données de démo",
+    "seedConfirm": "Ceci va SUPPRIMER toutes les équipes, tournois, matchs et news existants pour les remplacer par le jeu de données d'exemple. Continuer ?"
   }
 }
