@@ -1,0 +1,109 @@
+# PMEsport Hub — Site esport PUBG Mobile
+
+Site web complet dédié à l'esport PUBG Mobile : calendrier des tournois, scores en direct, actualités et fiches des équipes professionnelles. Multilingue (FR/EN), dark mode par défaut, mobile-first, données rafraîchies automatiquement.
+
+> L'architecture détaillée et le schéma de base de données sont documentés dans [ARCHITECTURE.md](./ARCHITECTURE.md).
+
+## Stack
+
+- **Next.js 15** (App Router) + TypeScript, **Tailwind CSS 4**
+- **PostgreSQL** (Neon recommandé, Supabase compatible) via **Drizzle ORM**
+- **next-intl** pour l'internationalisation (interface + données)
+- **Vercel Cron** pour la synchronisation automatique des données
+- Source de données tournois/équipes : **API Liquipedia** (MediaWiki API, conforme à leurs conditions d'utilisation)
+
+## Démarrage rapide
+
+```bash
+npm install
+npm run dev
+```
+
+C'est tout : **sans `DATABASE_URL`, le site tourne en mode démo** avec un jeu de données d'exemple intégré (tournoi en cours, match live, compte à rebours, news FR/EN). Idéal pour développer l'interface.
+
+Ouvrez http://localhost:3000 — vous êtes redirigé vers `/en` ou `/fr` selon la langue du navigateur.
+
+## Configuration complète (base de données réelle)
+
+1. **Créer une base PostgreSQL** sur [Neon](https://neon.tech) (ou Supabase) et récupérer la chaîne de connexion.
+
+2. **Configurer l'environnement** :
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   | Variable | Rôle |
+   |---|---|
+   | `DATABASE_URL` | Connexion PostgreSQL (pooler serverless conseillé) |
+   | `LIQUIPEDIA_USER_AGENT` | User-Agent identifiable **exigé par Liquipedia** — format `MonApp/1.0 (email@contact)` |
+   | `LIQUIPEDIA_API_KEY` | Optionnel, si un accès LPDB vous a été accordé |
+   | `CRON_SECRET` | Secret protégeant les routes `/api/cron/*` |
+   | `ADMIN_TOKEN` | Token protégeant la page `/admin` et `/api/admin/sync` |
+   | `NEXT_PUBLIC_SITE_URL` | URL canonique du site (RSS, sitemap) |
+
+3. **Créer les tables et charger les données d'exemple** :
+
+   ```bash
+   npm run db:push    # applique le schéma Drizzle à la base
+   npm run db:seed    # insère le jeu de données d'exemple
+   ```
+
+   Pour un workflow avec migrations versionnées : `npm run db:generate` puis `npm run db:migrate`.
+
+## Synchronisation automatique des données
+
+Quatre jobs tournent via Vercel Cron (définis dans `vercel.json`) :
+
+| Job | Fréquence | Rôle |
+|---|---|---|
+| `sync-tournaments` | toutes les 6 h | Découverte et mise à jour des tournois depuis Liquipedia, recalcul des statuts |
+| `sync-teams` | 1×/jour | Équipes et informations d'organisation |
+| `sync-live` | toutes les 5 min | Statuts des manches + recalcul du classement général (ne fait rien hors tournoi) |
+| `sync-news` | toutes les 2 h | Génération de news à partir des événements observés (début/fin de tournoi) |
+
+- Chaque exécution est journalisée dans `sync_logs`, consultable sur **`/{locale}/admin`** (avec bouton « Forcer la mise à jour » protégé par `ADMIN_TOKEN`).
+- Les pages ne lisent **que** la base locale : si l'API Liquipedia est indisponible, le site continue de servir les dernières données connues (fallback naturel).
+- Test manuel d'un job en local :
+
+  ```bash
+  curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/sync-tournaments
+  ```
+
+### Conformité Liquipedia
+
+- API officielle uniquement (`api.php`), **aucun scraping HTML** ;
+- User-Agent identifiable obligatoire sur chaque requête ;
+- rate limiting intégré (1 req/30 s pour `action=parse`, 1 req/2 s sinon) et petits lots par exécution ;
+- crédit « Données fournies par Liquipedia » dans le pied de page (licence CC-BY-SA 3.0).
+
+## Internationalisation
+
+- Interface : fichiers `src/messages/{en,fr}.json` (ajouter une langue = ajouter un fichier + l'inscrire dans `src/i18n/routing.ts`).
+- Données : table `translations` (clé `entity_type + entity_id + field + locale`) avec fallback anglais → valeur brute.
+- Détection automatique de la langue du navigateur à la première visite (middleware next-intl), changement manuel via le sélecteur du header (persisté en cookie).
+
+## Ingestion des scores live
+
+`sync-live` recalcule le classement général et l'historique de points **à partir des lignes `match_results`** stockées en base. Pour brancher une source temps réel (API officielle PUBG Mobile Esports, API d'organisateur, saisie manuelle), il suffit d'insérer les résultats de manche dans `matches` + `match_results` : l'affichage (page Live, classements, points kills/placement) suit automatiquement.
+
+## Déploiement sur Vercel
+
+1. Importer le dépôt dans Vercel.
+2. Renseigner les variables d'environnement du tableau ci-dessus (Production + Preview).
+3. Déployer : `vercel.json` enregistre les crons automatiquement (Vercel envoie `Authorization: Bearer $CRON_SECRET` aux routes cron).
+4. Appliquer le schéma sur la base de production : `DATABASE_URL=... npm run db:push` (puis `db:seed` si souhaité).
+
+## Commandes
+
+| Commande | Rôle |
+|---|---|
+| `npm run dev` | Serveur de développement |
+| `npm run build` / `npm start` | Build et serveur de production |
+| `npm run db:push` | Applique le schéma à la base |
+| `npm run db:generate` / `db:migrate` | Génère / applique les migrations SQL |
+| `npm run db:seed` | Charge le jeu de données d'exemple |
+
+## Structure du projet
+
+Voir [ARCHITECTURE.md](./ARCHITECTURE.md) pour l'arborescence commentée, le schéma des tables et les choix techniques.

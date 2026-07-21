@@ -1,0 +1,172 @@
+{
+  "common": {
+    "siteName": "PMEsport Hub",
+    "tagline": "L'esport PUBG Mobile, au même endroit",
+    "loading": "Chargement…",
+    "backTo": "Retour à {page}",
+    "notFound": "Page introuvable",
+    "notFoundText": "Cette page n'existe pas ou a été déplacée.",
+    "backHome": "Retour à l'accueil"
+  },
+  "nav": {
+    "home": "Accueil",
+    "tournaments": "Tournois",
+    "live": "Live",
+    "news": "News",
+    "teams": "Équipes",
+    "menu": "Menu"
+  },
+  "footer": {
+    "liquipediaCredit": "Données fournies par Liquipedia",
+    "liquipediaLicense": "Les données de tournois et d'équipes proviennent de Liquipedia sous licence CC-BY-SA 3.0.",
+    "disclaimer": "Site de fans non officiel. PUBG MOBILE est une marque déposée de ses propriétaires respectifs.",
+    "rss": "Flux RSS"
+  },
+  "theme": {
+    "toggle": "Changer de thème",
+    "light": "Mode clair",
+    "dark": "Mode sombre"
+  },
+  "home": {
+    "liveNow": "EN DIRECT",
+    "watchStream": "Voir le stream",
+    "next48h": "Matchs dans les prochaines 48 h",
+    "noUpcoming": "Aucun match programmé dans les prochaines 48 h.",
+    "latestNews": "Dernières news",
+    "allNews": "Toutes les news",
+    "fullCalendar": "Calendrier complet des tournois",
+    "ongoingTournaments": "Tournois en cours",
+    "standings": "Classement"
+  },
+  "tournaments": {
+    "title": "Tournois",
+    "subtitle": "Compétitions PUBG Mobile à venir, en cours et passées",
+    "filterRegion": "Région",
+    "filterTier": "Tier",
+    "filterStatus": "Statut",
+    "all": "Tous",
+    "tier": "Tier {tier}",
+    "qualifier": "Qualifications",
+    "prizePool": "Prize pool",
+    "format": "Format",
+    "dates": "Dates",
+    "region": "Région",
+    "teams": "{count} équipes",
+    "qualifiedTeams": "Équipes qualifiées",
+    "noTeamsYet": "Les équipes participantes n'ont pas encore été annoncées.",
+    "startsIn": "Début dans",
+    "started": "Tournoi commencé",
+    "noResults": "Aucun tournoi ne correspond à ces filtres.",
+    "results": "Résultats",
+    "finalRank": "Classement final",
+    "watchStream": "Stream officiel",
+    "countdown": {
+      "days": "jours",
+      "hours": "heures",
+      "minutes": "min",
+      "seconds": "sec"
+    },
+    "status": {
+      "upcoming": "À venir",
+      "ongoing": "En cours",
+      "completed": "Terminé"
+    }
+  },
+  "live": {
+    "title": "Live",
+    "subtitle": "Scores en direct et classement, actualisés automatiquement",
+    "overallStandings": "Classement général",
+    "rank": "#",
+    "team": "Équipe",
+    "matchesPlayed": "Joués",
+    "kills": "Kills",
+    "points": "Points",
+    "latestMatches": "Manche par manche",
+    "placement": "Placement",
+    "placementPoints": "Pts placement",
+    "killPoints": "Pts kills",
+    "totalPoints": "Total",
+    "map": "Carte",
+    "noLive": "Aucun tournoi n'est en direct actuellement.",
+    "noLiveText": "Le classement et les scores par manche apparaîtront ici automatiquement pendant le prochain tournoi.",
+    "seeCalendar": "Voir le calendrier des tournois",
+    "lastUpdated": "Les données peuvent être différées. Le dernier état connu est affiché si la source est indisponible.",
+    "winner": "Vainqueur"
+  },
+  "news": {
+    "title": "News",
+    "subtitle": "Transferts, résultats, annonces et patch notes",
+    "readMore": "Lire la suite",
+    "source": "Source",
+    "all": "Toutes",
+    "empty": "Pas encore de news pour ce tag.",
+    "tags": {
+      "transfers": "Transferts",
+      "results": "Résultats",
+      "tournaments": "Tournois",
+      "patch-notes": "Patch notes"
+    }
+  },
+  "teams": {
+    "title": "Équipes",
+    "subtitle": "Équipes professionnelles PUBG Mobile et leurs rosters",
+    "roster": "Roster",
+    "player": "Joueur",
+    "role": "Rôle",
+    "country": "Pays",
+    "region": "Région",
+    "organization": "Organisation",
+    "recentResults": "Résultats récents",
+    "noResults": "Aucun résultat enregistré pour le moment.",
+    "transfers": "Historique des transferts",
+    "noTransfers": "Aucun transfert enregistré.",
+    "joined": "rejoint",
+    "left": "quitte",
+    "freeAgent": "Agent libre",
+    "inactive": "Inactif"
+  },
+  "roles": {
+    "igl": "IGL",
+    "assaulter": "Assaut",
+    "support": "Support",
+    "sniper": "Sniper",
+    "scout": "Éclaireur",
+    "coach": "Coach",
+    "sub": "Remplaçant"
+  },
+  "regions": {
+    "global": "Global",
+    "asia": "Asie",
+    "sea": "Asie du Sud-Est",
+    "south_asia": "Asie du Sud",
+    "mena": "MENA",
+    "europe": "Europe",
+    "na": "Amérique du Nord",
+    "sa": "Amérique du Sud"
+  },
+  "admin": {
+    "title": "Administration",
+    "subtitle": "Forcer une mise à jour et vérifier que les jobs de synchronisation tournent",
+    "forceSync": "Forcer la mise à jour",
+    "runJob": "Lancer",
+    "jobs": {
+      "tournaments": "Tournois",
+      "teams": "Équipes & rosters",
+      "live": "Scores live",
+      "news": "News"
+    },
+    "syncLogs": "Dernières synchronisations",
+    "job": "Job",
+    "status": "Statut",
+    "items": "Éléments",
+    "startedAt": "Démarré à",
+    "duration": "Durée",
+    "error": "Erreur",
+    "noLogs": "Aucune synchronisation n'a encore été exécutée.",
+    "tokenLabel": "Token admin",
+    "tokenPlaceholder": "Saisir la valeur de ADMIN_TOKEN",
+    "running": "En cours…",
+    "success": "Job terminé avec succès",
+    "failed": "Le job a échoué"
+  }
+}
