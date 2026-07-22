@@ -1,5 +1,5 @@
 import {z} from 'zod';
-import type {Region, Tier} from '@/lib/types';
+import type {PlayerRole, Region, Tier} from '@/lib/types';
 
 /**
  * Best-effort parsing of Liquipedia infobox templates from raw wikitext.
@@ -7,17 +7,9 @@ import type {Region, Tier} from '@/lib/types';
  * validated with zod before anything reaches the database.
  */
 
-/** Extracts `|key=value` parameters from the first `{{Infobox …}}` template. */
-export function parseInfobox(
-  wikitext: string,
-  templatePrefix: string
-): Record<string, string> | null {
-  const start = wikitext.indexOf(`{{${templatePrefix}`);
-  if (start === -1) return null;
-
-  // Walk the template respecting nested {{ }} pairs.
+/** Finds the end of a `{{ }}` template starting at `start`, respecting nesting. */
+function findTemplateEnd(wikitext: string, start: number): number | null {
   let depth = 0;
-  let end = -1;
   for (let i = start; i < wikitext.length - 1; i++) {
     if (wikitext[i] === '{' && wikitext[i + 1] === '{') {
       depth++;
@@ -25,17 +17,15 @@ export function parseInfobox(
     } else if (wikitext[i] === '}' && wikitext[i + 1] === '}') {
       depth--;
       i++;
-      if (depth === 0) {
-        end = i + 1;
-        break;
-      }
+      if (depth === 0) return i + 1;
     }
   }
-  if (end === -1) return null;
+  return null;
+}
 
-  const body = wikitext.slice(start + 2, end - 2);
+/** Splits a template body into `|key=value` params, respecting nested [[ ]] / {{ }}. */
+function parseTemplateBody(body: string): Record<string, string> {
   const params: Record<string, string> = {};
-  // Split on top-level pipes only.
   let level = 0;
   let current = '';
   const parts: string[] = [];
@@ -66,6 +56,42 @@ export function parseInfobox(
     if (key) params[key] = stripWikiMarkup(value);
   }
   return params;
+}
+
+/** Extracts `|key=value` parameters from the first `{{<templatePrefix> …}}` template. */
+export function parseInfobox(
+  wikitext: string,
+  templatePrefix: string
+): Record<string, string> | null {
+  const start = wikitext.indexOf(`{{${templatePrefix}`);
+  if (start === -1) return null;
+  const end = findTemplateEnd(wikitext, start);
+  if (end === null) return null;
+  return parseTemplateBody(wikitext.slice(start + 2, end - 2));
+}
+
+/**
+ * Extracts params for every `{{<templatePrefix> …}}` occurrence in the page
+ * (case-insensitive) — used for repeated templates like roster rows, where
+ * a page lists one per player rather than a single infobox.
+ */
+export function parseAllTemplates(
+  wikitext: string,
+  templatePrefix: string
+): Record<string, string>[] {
+  const results: Record<string, string>[] = [];
+  const needle = `{{${templatePrefix}`.toLowerCase();
+  const haystack = wikitext.toLowerCase();
+  let searchFrom = 0;
+  while (true) {
+    const idx = haystack.indexOf(needle, searchFrom);
+    if (idx === -1) break;
+    const end = findTemplateEnd(wikitext, idx);
+    if (end === null) break;
+    results.push(parseTemplateBody(wikitext.slice(idx + 2, end - 2)));
+    searchFrom = end;
+  }
+  return results;
 }
 
 export function stripWikiMarkup(value: string): string {
@@ -111,6 +137,89 @@ export function mapTier(raw: string | undefined): Tier {
   if (value.includes('s-tier') || value === '1' || value === 's') return 's';
   if (value.includes('a-tier') || value === '2' || value === 'a') return 'a';
   return 'b';
+}
+
+const ROLE_MAP: Record<string, PlayerRole> = {
+  igl: 'igl',
+  'in-game leader': 'igl',
+  leader: 'igl',
+  assault: 'assaulter',
+  assaulter: 'assaulter',
+  fragger: 'assaulter',
+  support: 'support',
+  sniper: 'sniper',
+  dmr: 'sniper',
+  'sniper/dmr': 'sniper',
+  scout: 'scout',
+  flex: 'scout',
+  coach: 'coach',
+  'head coach': 'coach',
+  analyst: 'coach',
+  manager: 'coach',
+  sub: 'sub',
+  substitute: 'sub',
+  benched: 'sub',
+  inactive: 'sub'
+};
+
+export function mapRole(raw: string | undefined): PlayerRole | null {
+  if (!raw) return null;
+  return ROLE_MAP[raw.toLowerCase().trim()] ?? null;
+}
+
+// Common nations in the PUBG Mobile competitive scene, by the country name
+// Liquipedia's `flag=` parameter typically spells out (rather than a code).
+const COUNTRY_NAME_MAP: Record<string, string> = {
+  china: 'CN',
+  'hong kong': 'HK',
+  taiwan: 'TW',
+  mongolia: 'MN',
+  japan: 'JP',
+  'south korea': 'KR',
+  thailand: 'TH',
+  vietnam: 'VN',
+  indonesia: 'ID',
+  malaysia: 'MY',
+  singapore: 'SG',
+  philippines: 'PH',
+  cambodia: 'KH',
+  myanmar: 'MM',
+  india: 'IN',
+  pakistan: 'PK',
+  bangladesh: 'BD',
+  nepal: 'NP',
+  'sri lanka': 'LK',
+  'saudi arabia': 'SA',
+  'united arab emirates': 'AE',
+  egypt: 'EG',
+  jordan: 'JO',
+  kuwait: 'KW',
+  qatar: 'QA',
+  iraq: 'IQ',
+  turkey: 'TR',
+  russia: 'RU',
+  ukraine: 'UA',
+  poland: 'PL',
+  germany: 'DE',
+  france: 'FR',
+  'united kingdom': 'GB',
+  spain: 'ES',
+  brazil: 'BR',
+  argentina: 'AR',
+  mexico: 'MX',
+  chile: 'CL',
+  peru: 'PE',
+  colombia: 'CO',
+  'united states': 'US',
+  canada: 'CA'
+};
+
+/** Converts a Liquipedia `flag`/`country` value to an ISO 3166-1 alpha-2 code. */
+export function mapCountryCode(raw: string | undefined): string | null {
+  if (!raw) return null;
+  const cleaned = raw.trim();
+  if (/^[a-zA-Z]{2}$/.test(cleaned)) return cleaned.toUpperCase();
+  return COUNTRY_NAME_MAP[cleaned.toLowerCase()] ?? null;
 }
 
 export function parsePrizePool(raw: string | undefined): number | null {
@@ -227,4 +336,41 @@ export function infoboxToTeam(
   };
   const result = teamUpsertSchema.safeParse(candidate);
   return result.success ? result.data : null;
+}
+
+export interface ParsedRosterPlayer {
+  nickname: string;
+  realName: string | null;
+  role: PlayerRole | null;
+  countryCode: string | null;
+}
+
+// Liquipedia game wikis don't all use the same roster template name; try
+// each candidate and use the first one that actually matches the page.
+const ROSTER_TEMPLATE_CANDIDATES = ['RosterTableRow', 'TeamPlayer', 'Player'];
+
+/**
+ * Parses a team page's active roster. The exact template name varies by
+ * wiki, so this tries a short list of known conventions and keeps whichever
+ * one yields results — best-effort, since Liquipedia roster markup isn't
+ * standardized across every game wiki.
+ */
+export function parsePlayerRoster(wikitext: string): ParsedRosterPlayer[] {
+  for (const templateName of ROSTER_TEMPLATE_CANDIDATES) {
+    const rows = parseAllTemplates(wikitext, templateName);
+    const players = rows
+      .map((row): ParsedRosterPlayer | null => {
+        const nickname = row.id || row.name || row.player;
+        if (!nickname) return null;
+        return {
+          nickname,
+          realName: row.name2 || row.realname || row.namealt || null,
+          role: mapRole(row.role || row.position),
+          countryCode: mapCountryCode(row.flag || row.country || row.nationality)
+        };
+      })
+      .filter((p): p is ParsedRosterPlayer => p !== null);
+    if (players.length > 0) return players;
+  }
+  return [];
 }

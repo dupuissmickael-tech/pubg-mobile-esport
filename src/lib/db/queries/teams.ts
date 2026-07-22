@@ -1,4 +1,4 @@
-import {asc, desc, eq, or} from 'drizzle-orm';
+import {and, asc, desc, eq, or} from 'drizzle-orm';
 import {alias} from 'drizzle-orm/pg-core';
 import {getDb, hasDatabase} from '..';
 import {safeQuery} from '../safe-query';
@@ -56,7 +56,7 @@ export async function getTeamDetail(slug: string): Promise<TeamDetail | null> {
         countryCode: players.countryCode
       })
       .from(players)
-      .where(eq(players.teamId, team.id))
+      .where(and(eq(players.teamId, team.id), eq(players.isActive, true)))
       .orderBy(asc(players.nickname));
 
     const recentResults = await db
