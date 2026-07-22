@@ -18,7 +18,7 @@ export interface SyncResult {
  */
 export async function runWithLog(
   job: SyncJobName | `manual:${SyncJobName}`,
-  fn: () => Promise<{items: number; partial?: boolean}>
+  fn: () => Promise<{items: number; partial?: boolean; note?: string}>
 ): Promise<SyncResult> {
   const startedAt = new Date();
 
@@ -40,7 +40,10 @@ export async function runWithLog(
   try {
     const outcome = await fn();
     items = outcome.items;
-    if (outcome.partial) status = 'partial';
+    if (outcome.partial) {
+      status = 'partial';
+      errorMessage = outcome.note ?? null;
+    }
   } catch (error) {
     status = 'error';
     errorMessage = formatError(error);

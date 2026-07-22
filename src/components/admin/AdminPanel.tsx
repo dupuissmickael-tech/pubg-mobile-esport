@@ -30,7 +30,8 @@ export default function AdminPanel() {
         );
       } else {
         setFeedback(
-          `${t('success')} — ${job}: ${data.itemsUpserted} items (${data.status})`
+          `${t('success')} — ${job}: ${data.itemsUpserted} items (${data.status})` +
+            (data.errorMessage ? ` — ${data.errorMessage}` : '')
         );
       }
     } catch (error) {

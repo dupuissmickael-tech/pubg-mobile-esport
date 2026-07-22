@@ -21,21 +21,25 @@ const TARGET_TOURNAMENTS = ['PUBG Mobile Power Camp 2026'];
 export async function syncTournaments(): Promise<{
   items: number;
   partial?: boolean;
+  note?: string;
 }> {
   const db = getDb();
   let items = 0;
   let partial = false;
+  const notes: string[] = [];
 
   for (const query of TARGET_TOURNAMENTS) {
     const title = await searchPageTitle(query);
     if (!title) {
       partial = true;
+      notes.push(`"${query}": no Liquipedia page found by search`);
       continue;
     }
 
     const wikitext = await getPageWikitext(title);
     if (!wikitext) {
       partial = true;
+      notes.push(`"${title}": page found but wikitext fetch failed`);
       continue;
     }
 
@@ -43,6 +47,11 @@ export async function syncTournaments(): Promise<{
     const parsed = infobox ? infoboxToTournament(title, infobox) : null;
     if (!parsed) {
       partial = true;
+      notes.push(
+        infobox
+          ? `"${title}": found an Infobox league but couldn't parse required fields (name/dates)`
+          : `"${title}": page has no "Infobox league" template`
+      );
       continue;
     }
 
@@ -127,5 +136,5 @@ export async function syncTournaments(): Promise<{
     end
   `);
 
-  return {items, partial};
+  return {items, partial, note: notes.length > 0 ? notes.join(' | ') : undefined};
 }
