@@ -1,4 +1,26 @@
-import type {MapZone} from '@/components/three/MapMiniScene';
+export interface MapZone {
+  id: string;
+  /** x, z in -10..10 schema space */
+  position: [number, number];
+  label: string;
+  kind: 'hot' | 'rotation';
+  description: string;
+}
+
+export interface SquadMarker {
+  id: string;
+  position: [number, number];
+  label: string;
+  group: 'A' | 'B';
+}
+
+export interface RotationArrow {
+  id: string;
+  from: [number, number];
+  to: [number, number];
+  label: string;
+  description: string;
+}
 
 export interface MapDefinition {
   id: string;
@@ -11,7 +33,9 @@ export interface MapDefinition {
   specifics: string[];
   commonMistakes: string[];
   zones: MapZone[];
-  features: Array<{position: [number, number, number]; size: number; color: string}>;
+  squads: SquadMarker[];
+  rotationArrows: RotationArrow[];
+  splitNote: string;
 }
 
 export const maps: MapDefinition[] = [
@@ -35,37 +59,56 @@ export const maps: MapDefinition[] = [
     zones: [
       {
         id: 'military',
-        position: [-4, 0, -3],
+        position: [-4, -3],
         label: 'Zone militaire',
         kind: 'hot',
         description: "Concentration d'armement de haut niveau. Très contestée en early game, à réserver aux squads qui cherchent l'action immédiate."
       },
       {
         id: 'coastal-town',
-        position: [3, 0, -2],
+        position: [3, -2],
         label: 'Ville côtière',
         kind: 'hot',
         description: 'Grande zone urbaine avec beaucoup de loot et de bâtiments à étages — bons angles de tir mais rotations complexes une fois engagé.'
       },
       {
         id: 'central-fields',
-        position: [0, 0, 2.5],
+        position: [0, 2.5],
         label: 'Champs centraux',
         kind: 'rotation',
         description: 'Grands champs ouverts utilisés comme axe de rotation rapide, mais offrant peu de couverture — à traverser avec prudence en véhicule plutôt qu\'à pied.'
       },
       {
         id: 'hills',
-        position: [4.5, 0, 3],
+        position: [4.5, 3],
         label: 'Collines Est',
         kind: 'rotation',
         description: 'Point haut naturel donnant une vue sur une grande partie de la carte — souvent utilisé comme position de repli en fin de partie.'
       }
     ],
-    features: [
-      {position: [-2, 0, 1], size: 0.5, color: '#14532d'},
-      {position: [1.5, 0, -3.5], size: 0.4, color: '#14532d'},
-      {position: [-4, 0, 3], size: 0.45, color: '#14532d'}
+    squads: [
+      {id: 'a1', position: [3.6, 1.4], label: 'Binôme A', group: 'A'},
+      {id: 'a2', position: [4.3, 1.9], label: 'Binôme A', group: 'A'},
+      {id: 'b1', position: [-0.6, 3.6], label: 'Binôme B', group: 'B'},
+      {id: 'b2', position: [0.4, 4.1], label: 'Binôme B', group: 'B'}
+    ],
+    splitNote:
+      "Le binôme A tient les collines en hauteur : il surveille l'ensemble des champs et repère toute squad qui traverse à découvert. Le binôme B reste au niveau des champs, plus proche de la zone bleue si elle se referme sur ce côté. Les deux duos restent à une distance de course courte l'un de l'autre en cas de problème.",
+    rotationArrows: [
+      {
+        id: 'r1',
+        from: [-4, -3],
+        to: [0, 2.5],
+        label: 'Zone militaire → Champs centraux',
+        description: "Rotation classique en véhicule après un drop zone militaire. La traversée des champs ouverts est rapide mais visible de loin — à faire tôt, avant que les squads voisines n'aient les yeux sur cet axe."
+      },
+      {
+        id: 'r2',
+        from: [3, -2],
+        to: [4.5, 3],
+        label: 'Ville côtière → Collines Est',
+        description: "Repli vers la hauteur en fin de partie : quitter les bâtiments de la ville pour prendre un point de vue dégagé sur la zone finale, plutôt que de rester au niveau du sol sans visibilité."
+      }
     ]
   },
   {
@@ -88,36 +131,56 @@ export const maps: MapDefinition[] = [
     zones: [
       {
         id: 'harbor',
-        position: [-3.5, 0, -2.5],
+        position: [-3.5, -2.5],
         label: 'Zone portuaire',
         kind: 'hot',
         description: 'Bâtiments industriels denses en bord de canal, très contestés pour leur loot mais dangereux à cause des multiples angles hauts.'
       },
       {
         id: 'central-tower',
-        position: [0.5, 0, 0],
+        position: [0.5, 0],
         label: 'Tour centrale',
         kind: 'hot',
         description: "Point le plus haut de la carte, offre une vue sur presque toute la zone environnante — très recherché en fin de partie."
       },
       {
         id: 'canal-crossing',
-        position: [2.5, 0, -3],
+        position: [2.5, -3],
         label: 'Passage du canal',
         kind: 'rotation',
         description: "Goulot d'étranglement obligé pour rejoindre l'est de la carte — à traverser en vérifiant les bâtiments en hauteur des deux côtés."
       },
       {
         id: 'outskirts',
-        position: [-2, 0, 3],
+        position: [-2, 3],
         label: 'Périphérie',
         kind: 'rotation',
         description: 'Zone plus ouverte et moins contestée, souvent utilisée comme position de repli en début de fin de partie.'
       }
     ],
-    features: [
-      {position: [1, 0, -1.5], size: 0.4, color: '#312e81'},
-      {position: [-1, 0, -3], size: 0.35, color: '#312e81'}
+    squads: [
+      {id: 'a1', position: [3, -2.2], label: 'Binôme A', group: 'A'},
+      {id: 'a2', position: [3.6, -2.6], label: 'Binôme A', group: 'A'},
+      {id: 'b1', position: [1.4, -3.6], label: 'Binôme B', group: 'B'},
+      {id: 'b2', position: [1.9, -4.1], label: 'Binôme B', group: 'B'}
+    ],
+    splitNote:
+      "Sur un passage obligé comme celui-ci, le binôme A monte à l'étage d'un bâtiment pour surveiller les fenêtres et toits adverses, pendant que le binôme B reste au niveau du sol pour couvrir la traversée elle-même. Sans ce split vertical, toute l'équipe regarderait dans la même direction et resterait aveugle aux étages.",
+    rotationArrows: [
+      {
+        id: 'r1',
+        from: [-3.5, -2.5],
+        to: [0.5, 0],
+        label: 'Zone portuaire → Tour centrale',
+        description: 'Rotation vers le point le plus haut de la carte : à faire en vérifiant chaque bâtiment traversé, car la verticalité de Rondo veut dire qu\'un ennemi peut tirer depuis un étage sans être vu au niveau de la rue.'
+      },
+      {
+        id: 'r2',
+        from: [0.5, 0],
+        to: [-2, 3],
+        label: 'Tour centrale → Périphérie',
+        description: "Repli vers une zone plus calme quand la tour centrale devient intenable : la périphérie offre moins de vue mais aussi moins d'angles adverses simultanés."
+      }
     ]
   },
   {
@@ -140,36 +203,56 @@ export const maps: MapDefinition[] = [
     zones: [
       {
         id: 'desert-town',
-        position: [-4, 0, 2],
+        position: [-4, 2],
         label: 'Ville désertique',
         kind: 'hot',
         description: 'Zone urbaine dense avec un bon niveau de loot, mais entourée de terrain ouvert — sortir de la ville est souvent plus dangereux que d\'y looter.'
       },
       {
         id: 'canyon',
-        position: [1, 0, -3],
+        position: [1, -3],
         label: 'Canyon',
         kind: 'rotation',
         description: "Axe couvert par le relief, très utilisé pour rotate sans être vu — mais bien connu de toutes les squads expérimentées, donc parfois lui-même surveillé depuis les hauteurs environnantes."
       },
       {
         id: 'refinery',
-        position: [4, 0, 1],
+        position: [4, 1],
         label: 'Raffinerie',
         kind: 'hot',
         description: 'Grande zone industrielle avec du loot de qualité et plusieurs bâtiments à étages, mais peu de couverture à l\'approche.'
       },
       {
         id: 'open-plains',
-        position: [-1, 0, -1],
+        position: [-1, -1],
         label: 'Plaines ouvertes',
         kind: 'rotation',
         description: "Vaste étendue sans couverture : axe rapide mais extrêmement exposé, à traverser uniquement si la fenêtre de temps ne laisse pas d'alternative."
       }
     ],
-    features: [
-      {position: [2, 0, -2], size: 0.5, color: '#78350f'},
-      {position: [-2.5, 0, -0.5], size: 0.4, color: '#78350f'}
+    squads: [
+      {id: 'a1', position: [1.9, -3.7], label: 'Binôme A', group: 'A'},
+      {id: 'a2', position: [2.4, -4.1], label: 'Binôme A', group: 'A'},
+      {id: 'b1', position: [0.3, -2.5], label: 'Binôme B', group: 'B'},
+      {id: 'b2', position: [0.8, -2.9], label: 'Binôme B', group: 'B'}
+    ],
+    splitNote:
+      "Le binôme A se poste en hauteur sur le bord du canyon pour repérer une éventuelle embuscade avant qu'elle ne se déclenche. Le binôme B avance dans le fond du canyon, protégé du relief. Si toute la squad avançait groupée dans le canyon, un seul tireur posté en hauteur pourrait tous les toucher sur un même axe.",
+    rotationArrows: [
+      {
+        id: 'r1',
+        from: [-4, 2],
+        to: [1, -3],
+        label: 'Ville désertique → Canyon',
+        description: "Plutôt que de traverser les plaines à découvert, cette rotation passe par le canyon : plus long, mais protégé des fusils de précision qui dominent cette carte."
+      },
+      {
+        id: 'r2',
+        from: [4, 1],
+        to: [-1, -1],
+        label: 'Raffinerie → Plaines ouvertes',
+        description: "Axe direct et rapide mais totalement exposé — à n'utiliser que si le temps avant la fermeture de la zone ne permet pas de passer par un axe couvert."
+      }
     ]
   }
 ];

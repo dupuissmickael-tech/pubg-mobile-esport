@@ -1,14 +1,10 @@
-import {lazy} from 'react';
 import {Link, Navigate, useParams} from 'react-router-dom';
 import {motion} from 'framer-motion';
 import SectionHeading from '@/components/ui/SectionHeading';
 import Callout from '@/components/ui/Callout';
-import Scene3DBoundary from '@/components/three/Scene3DBoundary';
-import MapMiniFallback from '@/components/fallback/MapMiniFallback';
+import MapSchema from '@/components/maps/MapSchema';
 import {maps, getMapBySlug} from '@/data/content/maps';
 import {useMarkVisited} from '@/hooks/useMarkVisited';
-
-const MapMiniScene = lazy(() => import('@/components/three/MapMiniScene'));
 
 export default function MapDetailPage() {
   const {slug = ''} = useParams();
@@ -30,24 +26,8 @@ export default function MapDetailPage() {
 
       <div className="space-y-10">
         <div>
-          <h2 className="mb-4 text-lg font-bold text-white">Carte navigable</h2>
-          <Scene3DBoundary
-            scene={
-              <MapMiniScene
-                terrainColor={map.terrainColor}
-                accentColor={map.accentColor}
-                zones={map.zones}
-                features={map.features}
-              />
-            }
-            fallback={
-              <MapMiniFallback
-                terrainColor={map.terrainColor}
-                accentColor={map.accentColor}
-                zones={map.zones}
-              />
-            }
-          />
+          <h2 className="mb-4 text-lg font-bold text-white">Schéma de la carte</h2>
+          <MapSchema map={map} />
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
