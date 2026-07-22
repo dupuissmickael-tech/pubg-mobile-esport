@@ -1,11 +1,7 @@
 import {asc, eq, sql} from 'drizzle-orm';
 import {getDb} from '@/lib/db';
 import {players, teams} from '@/lib/db/schema';
-import {
-  fetchFileAsDataUri,
-  getCategoryMembers,
-  getPageWikitext
-} from '@/lib/liquipedia/client';
+import {fetchFileAsDataUri, getPageWikitext} from '@/lib/liquipedia/client';
 import {
   infoboxToTeam,
   parseInfobox,
@@ -14,24 +10,58 @@ import {
 
 const PAGES_PER_RUN = 2;
 
+/**
+ * Fetches one team's Liquipedia page and upserts its info, logo and roster.
+ * Shared by the teams refresh job and by the tournament sync (which
+ * discovers team pages from a tournament's participants list).
+ */
+export async function syncSingleTeam(
+  title: string
+): Promise<{success: boolean; teamId?: string}> {
+  const db = getDb();
+  const wikitext = await getPageWikitext(title);
+  if (!wikitext) return {success: false};
+
+  const infobox = parseInfobox(wikitext, 'Infobox team');
+  const parsed = infobox ? infoboxToTeam(title, infobox) : null;
+  if (!parsed) return {success: false};
+
+  const logoFile = infobox?.image || infobox?.logo;
+  const logoUrl = logoFile ? await fetchFileAsDataUri(logoFile) : null;
+
+  const [team] = await db
+    .insert(teams)
+    .values({...parsed, logoUrl})
+    .onConflictDoUpdate({
+      target: teams.liquipediaPage,
+      // Only overwrite logoUrl when this run actually got one — a
+      // transient fetch failure on a later refresh shouldn't erase a logo
+      // saved by a previous successful run.
+      set: {
+        name: parsed.name,
+        fullName: parsed.fullName,
+        region: parsed.region,
+        orgName: parsed.orgName,
+        updatedAt: new Date(),
+        ...(logoUrl ? {logoUrl} : {})
+      }
+    })
+    .returning({id: teams.id});
+
+  await syncRoster(team.id, wikitext);
+  return {success: true, teamId: team.id};
+}
+
+/**
+ * Refreshes teams already known in our database (discovered via tournament
+ * participants lists — see sync/tournaments.ts) — prioritizing any missing
+ * a logo, then the least recently refreshed.
+ */
 export async function syncTeams(): Promise<{items: number; partial?: boolean}> {
   const db = getDb();
   let items = 0;
   let partial = false;
 
-  const members = await getCategoryMembers('Category:Teams', 50);
-  const knownTitles = new Set(
-    (await db.select({page: teams.liquipediaPage}).from(teams)).map(
-      (r) => r.page
-    )
-  );
-  const newTitles = members
-    .map((m) => m.title)
-    .filter((title) => !knownTitles.has(title));
-
-  // Teams missing a logo (e.g. synced before the hotlink-download fix, or a
-  // transient download failure) come first, so a re-run actively repairs
-  // them instead of leaving it to chance whether they're picked as "stale".
   const missingLogo = await db
     .select({page: teams.liquipediaPage})
     .from(teams)
@@ -49,47 +79,14 @@ export async function syncTeams(): Promise<{items: number; partial?: boolean}> {
   const toRefresh = [
     ...new Set([
       ...missingLogo.map((r) => r.page as string),
-      ...newTitles,
       ...stale.map((r) => r.page as string)
     ])
   ].slice(0, PAGES_PER_RUN);
 
   for (const title of toRefresh) {
-    const wikitext = await getPageWikitext(title);
-    if (!wikitext) {
-      partial = true;
-      continue;
-    }
-    const infobox = parseInfobox(wikitext, 'Infobox team');
-    const parsed = infobox ? infoboxToTeam(title, infobox) : null;
-    if (!parsed) {
-      partial = true;
-      continue;
-    }
-    const logoFile = infobox?.image || infobox?.logo;
-    const logoUrl = logoFile ? await fetchFileAsDataUri(logoFile) : null;
-
-    const [team] = await db
-      .insert(teams)
-      .values({...parsed, logoUrl})
-      .onConflictDoUpdate({
-        target: teams.liquipediaPage,
-        // Only overwrite logoUrl when this run actually got one — a
-        // transient fetch failure on a later refresh shouldn't erase a
-        // logo saved by a previous successful run.
-        set: {
-          name: parsed.name,
-          fullName: parsed.fullName,
-          region: parsed.region,
-          orgName: parsed.orgName,
-          updatedAt: new Date(),
-          ...(logoUrl ? {logoUrl} : {})
-        }
-      })
-      .returning({id: teams.id});
-    items++;
-
-    await syncRoster(team.id, wikitext);
+    const result = await syncSingleTeam(title);
+    if (result.success) items++;
+    else partial = true;
   }
 
   return {items, partial};

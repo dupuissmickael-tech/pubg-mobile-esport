@@ -114,6 +114,22 @@ export async function getCategoryMembers(
   return query?.categorymembers ?? [];
 }
 
+/**
+ * Finds the page whose title best matches a free-text query, e.g. "PMGC
+ * 2025" — used to resolve a tournament's exact Liquipedia page title
+ * without having to guess or hardcode it.
+ */
+export async function searchPageTitle(query: string): Promise<string | null> {
+  const json = await apiCall({
+    action: 'query',
+    list: 'search',
+    srsearch: query,
+    srlimit: '1'
+  });
+  const search = json.query as {search?: Array<{title: string}>} | undefined;
+  return search?.search?.[0]?.title ?? null;
+}
+
 /** Fetches the raw wikitext of a page (rate limited to 1 req / 30 s). */
 export async function getPageWikitext(title: string): Promise<string | null> {
   const json = await apiCall({

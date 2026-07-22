@@ -1,16 +1,22 @@
-import {asc, sql} from 'drizzle-orm';
+import {sql} from 'drizzle-orm';
 import {getDb} from '@/lib/db';
-import {tournaments} from '@/lib/db/schema';
-import {getCategoryMembers, getPageWikitext} from '@/lib/liquipedia/client';
-import {infoboxToTournament, parseInfobox} from '@/lib/liquipedia/parsers';
+import {teams, tournamentTeams, tournaments} from '@/lib/db/schema';
+import {getPageWikitext, searchPageTitle} from '@/lib/liquipedia/client';
+import {
+  infoboxToTournament,
+  parseInfobox,
+  parseParticipantTeams,
+  slugify
+} from '@/lib/liquipedia/parsers';
 
 /**
- * Liquipedia's rate limit for `action=parse` is 1 request / 30 s, and cron
- * invocations are short-lived, so each run refreshes a small batch of pages.
- * Rotation is by `updated_at`: the least recently refreshed tournaments are
- * refreshed first, so the whole catalogue converges over successive runs.
+ * Scoped to the specific tournaments this site tracks — not a generic
+ * "every tournament ever" crawl. Add/remove entries here to change which
+ * tournaments (and, via their participants list, which teams) get synced.
+ * The free-text query is resolved to an exact Liquipedia page title via
+ * search, since the precise title format isn't guaranteed.
  */
-const PAGES_PER_RUN = 2;
+const TARGET_TOURNAMENTS = ['PMGC 2025', 'PMWC 2026'];
 
 export async function syncTournaments(): Promise<{
   items: number;
@@ -20,45 +26,27 @@ export async function syncTournaments(): Promise<{
   let items = 0;
   let partial = false;
 
-  // 1. Discover tournament pages (cheap query API call).
-  const members = await getCategoryMembers('Category:Tournaments', 50);
-  const knownTitles = new Set(
-    (
-      await db
-        .select({page: tournaments.liquipediaPage})
-        .from(tournaments)
-    ).map((r) => r.page)
-  );
-  const newTitles = members
-    .map((m) => m.title)
-    .filter((title) => !knownTitles.has(title));
+  for (const query of TARGET_TOURNAMENTS) {
+    const title = await searchPageTitle(query);
+    if (!title) {
+      partial = true;
+      continue;
+    }
 
-  // 2. Pick pages to refresh: new ones first, then the stalest known ones.
-  const stale = await db
-    .select({page: tournaments.liquipediaPage})
-    .from(tournaments)
-    .where(sql`${tournaments.liquipediaPage} is not null`)
-    .orderBy(asc(tournaments.updatedAt))
-    .limit(PAGES_PER_RUN);
-  const toRefresh = [
-    ...newTitles,
-    ...stale.map((r) => r.page as string)
-  ].slice(0, PAGES_PER_RUN);
-
-  // 3. Parse and upsert each page.
-  for (const title of toRefresh) {
     const wikitext = await getPageWikitext(title);
     if (!wikitext) {
       partial = true;
       continue;
     }
+
     const infobox = parseInfobox(wikitext, 'Infobox league');
     const parsed = infobox ? infoboxToTournament(title, infobox) : null;
     if (!parsed) {
       partial = true;
       continue;
     }
-    await db
+
+    const [tournament] = await db
       .insert(tournaments)
       .values({
         slug: parsed.slug,
@@ -85,11 +73,49 @@ export async function syncTournaments(): Promise<{
           streamUrl: parsed.streamUrl,
           updatedAt: new Date()
         }
-      });
+      })
+      .returning({id: tournaments.id});
     items++;
+
+    // Register participants as lightweight team stubs (name + liquipedia
+    // page only) so they show up immediately; the teams sync job fills in
+    // logo/roster/region for each over its own rate-limited runs. Fetching
+    // every participant's full page in this same run would blow well past
+    // Liquipedia's rate limit and the serverless function time budget.
+    const participantNames = parseParticipantTeams(wikitext);
+    for (const teamName of participantNames) {
+      const [team] = await db
+        .insert(teams)
+        .values({
+          slug: slugify(teamName),
+          name: teamName,
+          liquipediaPage: teamName
+        })
+        .onConflictDoNothing({target: teams.liquipediaPage})
+        .returning({id: teams.id});
+
+      const teamId =
+        team?.id ??
+        (
+          await db
+            .select({id: teams.id})
+            .from(teams)
+            .where(sql`${teams.liquipediaPage} = ${teamName}`)
+            .limit(1)
+        )[0]?.id;
+      if (!teamId) continue;
+
+      // onConflictDoNothing: never reset a link's accumulated live
+      // standings (total_points/total_kills) just because the tournament
+      // page was re-synced.
+      await db
+        .insert(tournamentTeams)
+        .values({tournamentId: tournament.id, teamId})
+        .onConflictDoNothing();
+    }
   }
 
-  // 4. Recompute statuses from dates (cheap, applies to every tournament).
+  // Recompute statuses from dates (cheap, applies to every tournament).
   await db.execute(sql`
     update tournaments set status = case
       when current_date < start_date then 'upcoming'::tournament_status

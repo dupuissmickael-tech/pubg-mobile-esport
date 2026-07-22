@@ -48,9 +48,17 @@ function parseTemplateBody(body: string): Record<string, string> {
   }
   parts.push(current);
 
+  let positionalIndex = 0;
   for (const part of parts.slice(1)) {
     const eq = part.indexOf('=');
-    if (eq === -1) continue;
+    if (eq === -1) {
+      // Bare positional argument (no explicit key), e.g. {{TeamCard|Name}} —
+      // keyed "1", "2"... like MediaWiki's own numbering.
+      positionalIndex++;
+      const value = part.trim();
+      if (value) params[String(positionalIndex)] = stripWikiMarkup(value);
+      continue;
+    }
     const key = part.slice(0, eq).trim().toLowerCase();
     const value = part.slice(eq + 1).trim();
     if (key) params[key] = stripWikiMarkup(value);
@@ -373,4 +381,34 @@ export function parsePlayerRoster(wikitext: string): ParsedRosterPlayer[] {
     if (players.length > 0) return players;
   }
   return [];
+}
+
+// Templates commonly used across Liquipedia game wikis to reference a team
+// in a participants list or bracket.
+const PARTICIPANT_TEMPLATE_CANDIDATES = ['TeamCard', 'TeamOpponent', 'Team'];
+
+/**
+ * Parses a tournament page's list of participating teams. Tries a few known
+ * template conventions first; if none match, falls back to scanning
+ * `[[Team Name]]` links inside a "Participants"/"Qualified"/"Teams" section,
+ * since bracket/participant markup varies a lot between Liquipedia wikis.
+ */
+export function parseParticipantTeams(wikitext: string): string[] {
+  for (const templateName of PARTICIPANT_TEMPLATE_CANDIDATES) {
+    const rows = parseAllTemplates(wikitext, templateName);
+    const teamNames = rows
+      .map((row) => row.team || row.name || row.link || row['1'])
+      .filter((name): name is string => Boolean(name));
+    if (teamNames.length > 0) return [...new Set(teamNames)];
+  }
+
+  const headingMatch = wikitext.match(
+    /==\s*(?:Qualified\s+Teams|Participants|Teams)\s*==([\s\S]*?)(?:\n==(?!=)|$)/i
+  );
+  if (!headingMatch) return [];
+  const section = headingMatch[1];
+  const links = [...section.matchAll(/\[\[([^\]|#]+)(?:[|#][^\]]*)?\]\]/g)]
+    .map((m) => m[1].trim())
+    .filter((title) => title && !title.includes(':'));
+  return [...new Set(links)];
 }
