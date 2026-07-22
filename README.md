@@ -59,7 +59,7 @@ Quatre jobs tournent via Vercel Cron (définis dans `vercel.json`), **1×/jour c
 
 | Job | Fréquence | Rôle |
 |---|---|---|
-| `sync-tournaments` | 1×/jour (05:00 UTC) | Met à jour les tournois **ciblés** (liste `TARGET_TOURNAMENTS` dans `src/lib/sync/tournaments.ts`, ex. « PMGC 2025 », « PMWC 2026 ») et enregistre leurs équipes participantes |
+| `sync-tournaments` | 1×/jour (05:00 UTC) | Met à jour les tournois **ciblés** (liste `TARGET_TOURNAMENTS` dans `src/lib/sync/tournaments.ts`, actuellement « PUBG Mobile Power Camp 2026 ») et enregistre leurs équipes participantes |
 | `sync-teams` | 1×/jour (04:30 UTC) | Complète logo/roster/région des équipes déjà découvertes via les tournois ci-dessus |
 | `sync-live` | 1×/jour (06:00 UTC) | Statuts des manches + recalcul du classement général (ne fait rien hors tournoi) |
 | `sync-news` | 1×/jour (08:15 UTC) | Génération de news à partir des événements observés (début/fin de tournoi) |

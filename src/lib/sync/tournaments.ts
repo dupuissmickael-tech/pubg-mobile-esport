@@ -16,7 +16,7 @@ import {
  * The free-text query is resolved to an exact Liquipedia page title via
  * search, since the precise title format isn't guaranteed.
  */
-const TARGET_TOURNAMENTS = ['PMGC 2025', 'PMWC 2026'];
+const TARGET_TOURNAMENTS = ['PUBG Mobile Power Camp 2026'];
 
 export async function syncTournaments(): Promise<{
   items: number;
