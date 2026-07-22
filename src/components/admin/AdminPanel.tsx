@@ -24,10 +24,10 @@ export default function AdminPanel() {
         body: JSON.stringify({job})
       });
       const data = await res.json();
-      if (!res.ok) {
-        setFeedback(`${t('failed')}: ${data.error ?? res.status}`);
-      } else if (data.status === 'error') {
-        setFeedback(`${t('failed')}: ${data.errorMessage ?? ''}`);
+      if (!res.ok || data.status === 'error') {
+        setFeedback(
+          `${t('failed')}: ${data.errorMessage ?? data.error ?? res.status}`
+        );
       } else {
         setFeedback(
           `${t('success')} — ${job}: ${data.itemsUpserted} items (${data.status})`
