@@ -29,16 +29,30 @@ export async function syncTeams(): Promise<{items: number; partial?: boolean}> {
     .map((m) => m.title)
     .filter((title) => !knownTitles.has(title));
 
+  // Teams missing a logo (e.g. synced before the hotlink-download fix, or a
+  // transient download failure) come first, so a re-run actively repairs
+  // them instead of leaving it to chance whether they're picked as "stale".
+  const missingLogo = await db
+    .select({page: teams.liquipediaPage})
+    .from(teams)
+    .where(sql`${teams.liquipediaPage} is not null and ${teams.logoUrl} is null`)
+    .orderBy(asc(teams.updatedAt))
+    .limit(PAGES_PER_RUN);
+
   const stale = await db
     .select({page: teams.liquipediaPage})
     .from(teams)
     .where(sql`${teams.liquipediaPage} is not null`)
     .orderBy(asc(teams.updatedAt))
     .limit(PAGES_PER_RUN);
-  const toRefresh = [...newTitles, ...stale.map((r) => r.page as string)].slice(
-    0,
-    PAGES_PER_RUN
-  );
+
+  const toRefresh = [
+    ...new Set([
+      ...missingLogo.map((r) => r.page as string),
+      ...newTitles,
+      ...stale.map((r) => r.page as string)
+    ])
+  ].slice(0, PAGES_PER_RUN);
 
   for (const title of toRefresh) {
     const wikitext = await getPageWikitext(title);
