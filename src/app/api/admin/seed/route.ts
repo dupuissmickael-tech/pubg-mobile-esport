@@ -1,4 +1,5 @@
 import {NextRequest, NextResponse} from 'next/server';
+import {formatError} from '@/lib/db/safe-query';
 import {seedDemoData} from '@/lib/db/seed';
 
 export const dynamic = 'force-dynamic';
@@ -24,7 +25,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({status: 'success', items});
   } catch (error) {
     return NextResponse.json(
-      {status: 'error', errorMessage: error instanceof Error ? error.message : String(error)},
+      {status: 'error', errorMessage: formatError(error)},
       {status: 500}
     );
   }

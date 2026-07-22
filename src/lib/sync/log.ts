@@ -1,4 +1,5 @@
 import {getDb, hasDatabase} from '@/lib/db';
+import {formatError} from '@/lib/db/safe-query';
 import {syncLogs} from '@/lib/db/schema';
 
 export type SyncJobName = 'tournaments' | 'teams' | 'live' | 'news';
@@ -42,7 +43,7 @@ export async function runWithLog(
     if (outcome.partial) status = 'partial';
   } catch (error) {
     status = 'error';
-    errorMessage = error instanceof Error ? error.message : String(error);
+    errorMessage = formatError(error);
   }
 
   const finishedAt = new Date();

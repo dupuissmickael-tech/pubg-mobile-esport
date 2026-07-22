@@ -1,5 +1,6 @@
 import {NextRequest, NextResponse} from 'next/server';
 import {clearAllData} from '@/lib/db/seed';
+import {formatError} from '@/lib/db/safe-query';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -23,7 +24,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({status: 'success'});
   } catch (error) {
     return NextResponse.json(
-      {status: 'error', errorMessage: error instanceof Error ? error.message : String(error)},
+      {status: 'error', errorMessage: formatError(error)},
       {status: 500}
     );
   }

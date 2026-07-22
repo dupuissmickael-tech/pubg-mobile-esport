@@ -84,6 +84,9 @@ export async function syncTournaments(): Promise<{
     // Liquipedia's rate limit and the serverless function time budget.
     const participantNames = parseParticipantTeams(wikitext);
     for (const teamName of participantNames) {
+      // No target: `slug` is unique too, and a team could otherwise collide
+      // there (e.g. listed in both target tournaments in the same run)
+      // without tripping the liquipedia_page constraint alone.
       const [team] = await db
         .insert(teams)
         .values({
@@ -91,7 +94,7 @@ export async function syncTournaments(): Promise<{
           name: teamName,
           liquipediaPage: teamName
         })
-        .onConflictDoNothing({target: teams.liquipediaPage})
+        .onConflictDoNothing()
         .returning({id: teams.id});
 
       const teamId =

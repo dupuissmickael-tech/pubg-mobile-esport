@@ -13,3 +13,27 @@ export async function safeQuery<T>(fn: () => Promise<T>, fallback: T): Promise<T
     return fallback;
   }
 }
+
+/**
+ * postgres.js errors set `.message` to a generic "Failed query: ... params:
+ * ..." dump — the actual reason (constraint violation, invalid enum value,
+ * etc.) lives on `.cause`. Same for most wrapped/aggregate errors. This
+ * pulls out the real reason so it's actually visible in /admin and logs,
+ * instead of a query dump or a bare HTTP status code.
+ */
+export function formatError(error: unknown): string {
+  if (error instanceof Error) {
+    const cause = (error as {cause?: unknown}).cause;
+    if (cause) {
+      const causeMessage =
+        cause instanceof Error
+          ? cause.message
+          : typeof cause === 'object' && cause !== null
+            ? ((cause as Record<string, unknown>).message ?? JSON.stringify(cause))
+            : String(cause);
+      return `${error.message} — ${causeMessage}`;
+    }
+    return error.message;
+  }
+  return String(error);
+}
