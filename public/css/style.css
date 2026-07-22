@@ -282,6 +282,26 @@ tbody tr.chicken-dinner:hover {
   color: var(--yellow);
 }
 
+.empty-state {
+  text-align: center;
+  padding: 2.5rem 1.5rem;
+  border: 1px solid var(--border-dim);
+  border-radius: 6px;
+  background: var(--bg-panel);
+  color: var(--text-main);
+}
+
+.empty-state .empty-icon {
+  font-size: 2.2rem;
+  margin: 0 0 0.5rem;
+}
+
+.empty-state .empty-hint {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+}
+
 .site-footer {
   text-align: center;
   padding: 1.25rem;

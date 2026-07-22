@@ -1,5 +1,6 @@
 const express = require('express');
 const {
+  PLATFORM_LABELS,
   shardForPlatform,
   getPlayerByName,
   getMatch,
@@ -16,17 +17,23 @@ router.get('/player', async (req, res) => {
   const name = (req.query.name || '').trim();
   const platform = (req.query.platform || '').trim().toLowerCase();
 
-  if (!name || !platform) {
-    return res.status(400).json({ error: 'Pseudo et plateforme requis' });
+  if (!name) {
+    return res.status(400).json({ error: 'Merci de renseigner un pseudo.' });
+  }
+  if (!platform) {
+    return res.status(400).json({ error: 'Merci de choisir une plateforme.' });
   }
 
   const shard = shardForPlatform(platform);
   if (!shard) {
-    return res.status(400).json({ error: 'Plateforme invalide' });
+    const validPlatforms = Object.values(PLATFORM_LABELS).join(', ');
+    return res.status(400).json({
+      error: `Plateforme invalide. Plateformes acceptées : ${validPlatforms}.`,
+    });
   }
 
   try {
-    const player = await getPlayerByName(shard, name);
+    const player = await getPlayerByName(shard, name, platform);
     const matchRefs = (player.relationships?.matches?.data || []).slice(0, MAX_MATCHES);
 
     const matches = [];
@@ -52,13 +59,14 @@ router.get('/player', async (req, res) => {
       playerName: player.attributes.name,
       platform,
       matches,
+      noRecentMatches: matches.length === 0,
     });
   } catch (err) {
     const statusCode = err.statusCode || 500;
     if (statusCode >= 500) {
       console.error(err);
     }
-    res.status(statusCode).json({ error: err.message || 'Erreur serveur' });
+    res.status(statusCode).json({ error: err.message || 'Erreur serveur inattendue.' });
   }
 });
 

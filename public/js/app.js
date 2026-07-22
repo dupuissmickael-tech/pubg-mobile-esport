@@ -20,6 +20,12 @@ function formatGameMode(mode) {
   return GAME_MODE_LABELS[mode] || mode;
 }
 
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
 function formatDate(isoString) {
   const date = new Date(isoString);
   return date.toLocaleDateString('fr-FR', {
@@ -57,9 +63,21 @@ function renderResults(data) {
   resultsTitle.textContent = `Dernières parties de ${data.playerName}`;
   resultsBody.innerHTML = '';
 
+  const table = document.getElementById('results-table');
+  const emptyState = document.getElementById('empty-state');
+
   if (data.matches.length === 0) {
-    resultsBody.innerHTML = '<tr><td colspan="6">Aucune partie récente trouvée.</td></tr>';
+    table.classList.add('hidden');
+    emptyState.classList.remove('hidden');
+    emptyState.innerHTML = `
+      <p class="empty-icon">🎯</p>
+      <p>Aucune partie récente trouvée pour <strong>${escapeHtml(data.playerName)}</strong>.</p>
+      <p class="empty-hint">L'API PUBG ne conserve que les 14 derniers jours de parties : ce joueur n'a peut-être pas joué récemment.</p>
+    `;
   } else {
+    table.classList.remove('hidden');
+    emptyState.classList.add('hidden');
+
     for (const match of data.matches) {
       const row = document.createElement('tr');
       if (match.chickenDinner) row.classList.add('chicken-dinner');
