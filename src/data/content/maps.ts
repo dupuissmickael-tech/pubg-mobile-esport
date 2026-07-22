@@ -87,10 +87,10 @@ export const maps: MapDefinition[] = [
       }
     ],
     squads: [
-      {id: 'a1', position: [3.6, 1.4], label: 'Binôme A', group: 'A'},
-      {id: 'a2', position: [4.3, 1.9], label: 'Binôme A', group: 'A'},
-      {id: 'b1', position: [-0.6, 3.6], label: 'Binôme B', group: 'B'},
-      {id: 'b2', position: [0.4, 4.1], label: 'Binôme B', group: 'B'}
+      {id: 'a1', position: [3.2, 0.8], label: 'Binôme A', group: 'A'},
+      {id: 'a2', position: [4.9, 2.1], label: 'Binôme A', group: 'A'},
+      {id: 'b1', position: [-1.4, 3.2], label: 'Binôme B', group: 'B'},
+      {id: 'b2', position: [1.2, 4.3], label: 'Binôme B', group: 'B'}
     ],
     splitNote:
       "Le binôme A tient les collines en hauteur : il surveille l'ensemble des champs et repère toute squad qui traverse à découvert. Le binôme B reste au niveau des champs, plus proche de la zone bleue si elle se referme sur ce côté. Les deux duos restent à une distance de course courte l'un de l'autre en cas de problème.",
@@ -159,10 +159,10 @@ export const maps: MapDefinition[] = [
       }
     ],
     squads: [
-      {id: 'a1', position: [3, -2.2], label: 'Binôme A', group: 'A'},
-      {id: 'a2', position: [3.6, -2.6], label: 'Binôme A', group: 'A'},
-      {id: 'b1', position: [1.4, -3.6], label: 'Binôme B', group: 'B'},
-      {id: 'b2', position: [1.9, -4.1], label: 'Binôme B', group: 'B'}
+      {id: 'a1', position: [2.6, -1.8], label: 'Binôme A', group: 'A'},
+      {id: 'a2', position: [4.2, -3.1], label: 'Binôme A', group: 'A'},
+      {id: 'b1', position: [0.8, -3.2], label: 'Binôme B', group: 'B'},
+      {id: 'b2', position: [2.4, -4.7], label: 'Binôme B', group: 'B'}
     ],
     splitNote:
       "Sur un passage obligé comme celui-ci, le binôme A monte à l'étage d'un bâtiment pour surveiller les fenêtres et toits adverses, pendant que le binôme B reste au niveau du sol pour couvrir la traversée elle-même. Sans ce split vertical, toute l'équipe regarderait dans la même direction et resterait aveugle aux étages.",
@@ -231,10 +231,10 @@ export const maps: MapDefinition[] = [
       }
     ],
     squads: [
-      {id: 'a1', position: [1.9, -3.7], label: 'Binôme A', group: 'A'},
-      {id: 'a2', position: [2.4, -4.1], label: 'Binôme A', group: 'A'},
-      {id: 'b1', position: [0.3, -2.5], label: 'Binôme B', group: 'B'},
-      {id: 'b2', position: [0.8, -2.9], label: 'Binôme B', group: 'B'}
+      {id: 'a1', position: [1.4, -3.4], label: 'Binôme A', group: 'A'},
+      {id: 'a2', position: [3, -4.8], label: 'Binôme A', group: 'A'},
+      {id: 'b1', position: [-0.4, -1.9], label: 'Binôme B', group: 'B'},
+      {id: 'b2', position: [1.3, -3], label: 'Binôme B', group: 'B'}
     ],
     splitNote:
       "Le binôme A se poste en hauteur sur le bord du canyon pour repérer une éventuelle embuscade avant qu'elle ne se déclenche. Le binôme B avance dans le fond du canyon, protégé du relief. Si toute la squad avançait groupée dans le canyon, un seul tireur posté en hauteur pourrait tous les toucher sur un même axe.",

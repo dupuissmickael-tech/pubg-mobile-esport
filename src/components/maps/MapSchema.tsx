@@ -14,6 +14,23 @@ const SQUAD_COLORS: Record<'A' | 'B', string> = {
   B: '#facc15'
 };
 
+/** Bows the path away from the map centre, so a rotation reads as following the terrain/edge rather than a straight beeline. */
+function arcPath(from: [number, number], to: [number, number]) {
+  const x1 = toSvg(from[0]);
+  const y1 = toSvg(from[1]);
+  const x2 = toSvg(to[0]);
+  const y2 = toSvg(to[1]);
+  const mx = (x1 + x2) / 2;
+  const my = (y1 + y2) / 2;
+  const dx = mx - 100;
+  const dy = my - 100;
+  const dist = Math.hypot(dx, dy) || 1;
+  const bow = 16;
+  const cx = mx + (dx / dist) * bow;
+  const cy = my + (dy / dist) * bow;
+  return `M ${x1} ${y1} Q ${cx} ${cy} ${x2} ${y2}`;
+}
+
 interface MapSchemaProps {
   map: MapDefinition;
 }
@@ -122,18 +139,13 @@ export default function MapSchema({map}: MapSchemaProps) {
             {layers.rotations &&
               map.rotationArrows.map((arrow) => {
                 const isSelected = selected?.type === 'arrow' && selected.id === arrow.id;
-                const x1 = toSvg(arrow.from[0]);
-                const y1 = toSvg(arrow.from[1]);
-                const x2 = toSvg(arrow.to[0]);
-                const y2 = toSvg(arrow.to[1]);
+                const d = arcPath(arrow.from, arrow.to);
                 return (
                   <g key={arrow.id} onClick={() => setSelected({type: 'arrow', id: arrow.id})} className="cursor-pointer">
-                    <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="transparent" strokeWidth={10} />
-                    <line
-                      x1={x1}
-                      y1={y1}
-                      x2={x2}
-                      y2={y2}
+                    <path d={d} fill="none" stroke="transparent" strokeWidth={10} />
+                    <path
+                      d={d}
+                      fill="none"
                       stroke="#e2e8f0"
                       strokeOpacity={isSelected ? 1 : 0.65}
                       strokeWidth={isSelected ? 2.4 : 1.6}
