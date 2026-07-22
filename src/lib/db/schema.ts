@@ -245,3 +245,11 @@ export const syncLogs = pgTable('sync_logs', {
   startedAt: timestamp('started_at', {withTimezone: true}).notNull(),
   finishedAt: timestamp('finished_at', {withTimezone: true})
 });
+
+// Tracks the last Liquipedia request time per action, persisted so the
+// rate limit is respected across separate serverless invocations (e.g. two
+// admin button taps a few seconds apart), not just within one.
+export const rateLimits = pgTable('rate_limits', {
+  key: text('key').primaryKey(),
+  lastAt: timestamp('last_at', {withTimezone: true}).notNull()
+});

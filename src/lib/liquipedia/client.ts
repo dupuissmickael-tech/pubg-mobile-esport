@@ -12,6 +12,8 @@
  * and the site keeps serving the last known data.
  */
 
+import {waitForRateLimit} from './rate-limit';
+
 const API_BASE = 'https://liquipedia.net/pubgmobile/api.php';
 const FILE_BASE = 'https://liquipedia.net/commons/Special:FilePath/';
 
@@ -20,23 +22,16 @@ const DEFAULT_INTERVAL_MS = 2_000;
 const IMAGE_INTERVAL_MS = 2_000;
 const MAX_IMAGE_BYTES = 300_000;
 
-let lastParseAt = 0;
-let lastQueryAt = 0;
-let lastImageAt = 0;
-
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
+// Persisted in Postgres (see rate-limit.ts) — a serverless function is a
+// fresh process on every invocation, so an in-memory-only timer would reset
+// between two admin button taps a few seconds apart and could still exceed
+// Liquipedia's real rate limit even though each individual invocation
+// "throttled" correctly by its own (empty) clock.
 async function throttle(action: string): Promise<void> {
-  const now = Date.now();
-  if (action === 'parse') {
-    const wait = lastParseAt + PARSE_INTERVAL_MS - now;
-    if (wait > 0) await sleep(wait);
-    lastParseAt = Date.now();
-  } else {
-    const wait = lastQueryAt + DEFAULT_INTERVAL_MS - now;
-    if (wait > 0) await sleep(wait);
-    lastQueryAt = Date.now();
-  }
+  await waitForRateLimit(
+    action === 'parse' ? 'liquipedia:parse' : 'liquipedia:query',
+    action === 'parse' ? PARSE_INTERVAL_MS : DEFAULT_INTERVAL_MS
+  );
 }
 
 function userAgent(): string {
@@ -157,10 +152,7 @@ export async function fetchFileAsDataUri(filename: string): Promise<string | nul
   const clean = filename.replace(/^(File|Image):/i, '').trim();
   if (!clean) return null;
 
-  const now = Date.now();
-  const wait = lastImageAt + IMAGE_INTERVAL_MS - now;
-  if (wait > 0) await sleep(wait);
-  lastImageAt = Date.now();
+  await waitForRateLimit('liquipedia:image', IMAGE_INTERVAL_MS);
 
   const response = await fetch(`${FILE_BASE}${encodeURIComponent(clean)}`, {
     headers: {'User-Agent': userAgent()},
