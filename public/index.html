@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StatDrop — Stats PUBG</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Teko:wght@600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <div class="scanline-overlay"></div>
+
+  <header class="site-header">
+    <div class="logo">
+      <span class="logo-stat">STAT</span><span class="logo-drop">DROP</span>
+    </div>
+    <p class="tagline">Tes stats PUBG, direct depuis l'API officielle.</p>
+  </header>
+
+  <main class="container">
+    <section class="search-panel">
+      <form id="search-form" autocomplete="off">
+        <div class="field">
+          <label for="player-name">Pseudo</label>
+          <input
+            type="text"
+            id="player-name"
+            name="playerName"
+            placeholder="Ex : Chocotaco"
+            required
+            minlength="1"
+          />
+        </div>
+
+        <div class="field">
+          <label for="platform">Plateforme</label>
+          <select id="platform" name="platform" required>
+            <option value="steam">Steam (PC)</option>
+            <option value="xbox">Xbox</option>
+            <option value="playstation">PlayStation</option>
+          </select>
+        </div>
+
+        <button type="submit" id="search-btn">
+          <span>RECHERCHER</span>
+        </button>
+      </form>
+    </section>
+
+    <section id="status-panel" class="status-panel hidden">
+      <div id="loading" class="loading hidden">
+        <div class="spinner"></div>
+        <p>Récupération des données du champ de bataille...</p>
+      </div>
+      <div id="error-message" class="error-message hidden"></div>
+    </section>
+
+    <section id="results-panel" class="results-panel hidden">
+      <h2 id="results-title"></h2>
+      <div class="table-wrapper">
+        <table id="results-table">
+          <thead>
+            <tr>
+              <th>Mode</th>
+              <th>Date</th>
+              <th>Kills</th>
+              <th>Dégâts</th>
+              <th>Classement</th>
+              <th>Chicken Dinner</th>
+            </tr>
+          </thead>
+          <tbody id="results-body"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>StatDrop &mdash; Données fournies par l'API officielle PUBG (developer.pubg.com)</p>
+  </footer>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>
