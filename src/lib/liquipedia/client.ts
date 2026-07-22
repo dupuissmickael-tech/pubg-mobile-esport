@@ -13,12 +13,16 @@
  */
 
 const API_BASE = 'https://liquipedia.net/pubgmobile/api.php';
+const FILE_BASE = 'https://liquipedia.net/commons/Special:FilePath/';
 
 const PARSE_INTERVAL_MS = 30_000;
 const DEFAULT_INTERVAL_MS = 2_000;
+const IMAGE_INTERVAL_MS = 2_000;
+const MAX_IMAGE_BYTES = 300_000;
 
 let lastParseAt = 0;
 let lastQueryAt = 0;
+let lastImageAt = 0;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -122,4 +126,37 @@ export async function getPageWikitext(title: string): Promise<string | null> {
     | {wikitext?: {['*']?: string}}
     | undefined;
   return parse?.wikitext?.['*'] ?? null;
+}
+
+/**
+ * Downloads a Liquipedia-hosted file (e.g. a team logo referenced in an
+ * infobox) and returns it as a data: URI. Liquipedia blocks hotlinking
+ * (embedding their images directly via <img src>  from another domain) —
+ * that protection targets browser requests, so a server-side download like
+ * this one, with our identifiable User-Agent, is the compliant way to
+ * display these logos on our own pages instead of a broken "hotlinking not
+ * allowed" placeholder.
+ */
+export async function fetchFileAsDataUri(filename: string): Promise<string | null> {
+  const clean = filename.replace(/^(File|Image):/i, '').trim();
+  if (!clean) return null;
+
+  const now = Date.now();
+  const wait = lastImageAt + IMAGE_INTERVAL_MS - now;
+  if (wait > 0) await sleep(wait);
+  lastImageAt = Date.now();
+
+  const response = await fetch(`${FILE_BASE}${encodeURIComponent(clean)}`, {
+    headers: {'User-Agent': userAgent()},
+    cache: 'no-store'
+  });
+  if (!response.ok) return null;
+
+  const contentType = response.headers.get('content-type') ?? '';
+  if (!contentType.startsWith('image/')) return null;
+
+  const buffer = await response.arrayBuffer();
+  if (buffer.byteLength === 0 || buffer.byteLength > MAX_IMAGE_BYTES) return null;
+
+  return `data:${contentType};base64,${Buffer.from(buffer).toString('base64')}`;
 }

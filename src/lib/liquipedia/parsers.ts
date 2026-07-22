@@ -167,19 +167,6 @@ export const teamUpsertSchema = z.object({
 
 export type TeamUpsert = z.infer<typeof teamUpsertSchema>;
 
-/**
- * Builds a displayable URL for a file hosted on Liquipedia (team logos are
- * uploaded media, referenced by filename in infobox templates). Liquipedia
- * runs MediaWiki, whose Special:FilePath redirects to the actual image —
- * safe to use directly as an <img src>.
- */
-export function resolveLiquipediaFile(filename: string | undefined): string | null {
-  if (!filename) return null;
-  const clean = filename.replace(/^(File|Image):/i, '').trim();
-  if (!clean) return null;
-  return `https://liquipedia.net/commons/Special:FilePath/${encodeURIComponent(clean)}`;
-}
-
 export function slugify(title: string): string {
   return title
     .toLowerCase()
@@ -232,7 +219,10 @@ export function infoboxToTeam(
     fullName: infobox.romanized_name || null,
     region: mapRegion(infobox.region ?? infobox.location),
     orgName: infobox.parent || null,
-    logoUrl: resolveLiquipediaFile(infobox.image || infobox.logo),
+    // Resolved separately by the sync job (fetchFileAsDataUri): Liquipedia
+    // blocks hotlinking, so the logo must be downloaded server-side rather
+    // than referenced by a direct <img src> URL.
+    logoUrl: null as string | null,
     liquipediaPage: pageTitle
   };
   const result = teamUpsertSchema.safeParse(candidate);

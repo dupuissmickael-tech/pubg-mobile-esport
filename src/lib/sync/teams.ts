@@ -1,7 +1,11 @@
 import {asc, sql} from 'drizzle-orm';
 import {getDb} from '@/lib/db';
 import {teams} from '@/lib/db/schema';
-import {getCategoryMembers, getPageWikitext} from '@/lib/liquipedia/client';
+import {
+  fetchFileAsDataUri,
+  getCategoryMembers,
+  getPageWikitext
+} from '@/lib/liquipedia/client';
 import {infoboxToTeam, parseInfobox} from '@/lib/liquipedia/parsers';
 
 const PAGES_PER_RUN = 2;
@@ -44,18 +48,24 @@ export async function syncTeams(): Promise<{items: number; partial?: boolean}> {
       partial = true;
       continue;
     }
+    const logoFile = infobox?.image || infobox?.logo;
+    const logoUrl = logoFile ? await fetchFileAsDataUri(logoFile) : null;
+
     await db
       .insert(teams)
-      .values(parsed)
+      .values({...parsed, logoUrl})
       .onConflictDoUpdate({
         target: teams.liquipediaPage,
+        // Only overwrite logoUrl when this run actually got one — a
+        // transient fetch failure on a later refresh shouldn't erase a
+        // logo saved by a previous successful run.
         set: {
           name: parsed.name,
           fullName: parsed.fullName,
           region: parsed.region,
           orgName: parsed.orgName,
-          logoUrl: parsed.logoUrl,
-          updatedAt: new Date()
+          updatedAt: new Date(),
+          ...(logoUrl ? {logoUrl} : {})
         }
       });
     items++;
