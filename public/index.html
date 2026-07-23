@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ReplyBoost — Réponses aux avis clients</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>ReplyBoost</h1>
+      <p class="subtitle">Générez une réponse adaptée à un avis client en quelques secondes</p>
+    </header>
+
+    <main>
+      <label for="review-input">Avis client</label>
+      <textarea
+        id="review-input"
+        rows="6"
+        placeholder="Collez ici le texte de l'avis client (Google, TripAdvisor, etc.)"
+      ></textarea>
+
+      <label for="tone-select">Ton de la réponse</label>
+      <select id="tone-select">
+        <option value="professionnel">Professionnel</option>
+        <option value="chaleureux">Chaleureux</option>
+        <option value="concis">Concis</option>
+      </select>
+
+      <button id="generate-btn">Générer la réponse</button>
+
+      <div id="error-message" class="error hidden"></div>
+
+      <section id="result-section" class="hidden">
+        <label for="reply-output">Réponse générée</label>
+        <textarea id="reply-output" rows="6" readonly></textarea>
+        <button id="copy-btn" class="secondary-btn">Copier</button>
+        <span id="copy-confirmation" class="hidden">Copié !</span>
+      </section>
+    </main>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
