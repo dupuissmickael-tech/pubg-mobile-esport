@@ -18,8 +18,8 @@ plafond officiel du Bouclier Qualité Prix (BQP).
 ### Traitement des photos (avant tout stockage)
 
 1. Vérification EXIF (voir « Anti-fraude » ci-dessous)
-2. Floutage automatique des visages détectés — toute personne visible sur
-   la photo, pas seulement le déclarant (voir limites plus bas)
+2. ~~Floutage automatique des visages détectés~~ — **temporairement
+   désactivé**, voir « Floutage des visages » plus bas
 3. Suppression des métadonnées EXIF (GPS, modèle, horodatage) et
    compression/redimensionnement (1600px max, qualité 80)
 4. Calcul d'une empreinte visuelle (hash perceptuel) pour repérer les
@@ -98,58 +98,46 @@ En résumé : cette couche relève la barre contre le spam et les erreurs
 grossières, elle n'empêche pas un acteur motivé de publier un faux
 signalement plausible.
 
-## Floutage des visages : fonctionnement et risques
+## Floutage des visages : DÉSACTIVÉ pour ce déploiement
 
-Chaque photo passe par un détecteur de visages local (`@vladmandic/face-api`,
-modèle `tiny_face_detector`) avant stockage ; les zones détectées sont
-pixelisées. **Best-effort, jamais bloquant** : si la détection échoue
-pour une raison quelconque, la photo est publiée non retouchée plutôt que
-de faire échouer tout le signalement.
+**Statut actuel : retiré du pipeline, pas seulement inactif.** Pour ce
+premier déploiement avec de vrais utilisateurs, la dépendance
+`@tensorflow/tfjs-node` (+ `@tensorflow/tfjs` + `@vladmandic/face-api`)
+a été complètement désinstallée, pas juste désactivée par un flag —
+cela élimine aussi le risque que le *build* Vercel lui-même échoue à
+cause du binaire natif (pas seulement un risque à l'exécution). Le
+formulaire, la page « Comment ça marche » et les mentions légales ont
+été corrigés en conséquence : ils ne promettent plus de floutage tant
+qu'il n'est pas réactivé et revérifié.
 
-**Pourquoi ce choix technique :** contrairement à la plupart des modèles
-TF.js qui se téléchargent depuis un CDN au premier appel, celui-ci est
-embarqué directement dans le paquet npm — aucune photo n'est donc envoyée
-à un service tiers pour la détection, et ça fonctionne même si le CDN du
-modèle est injoignable (c'est d'ailleurs comme ça que le problème a été
-découvert : `tfhub.dev`, la source par défaut, est bloqué dans cet
-environnement de développement).
+**Pourquoi ce retrait, en résumé** (détails complets dans l'historique
+git, commit `39306da`) :
+- Dépendance native lourde, jamais vérifiée sur les fonctions serverless
+  Vercel (réseau bloqué dans l'environnement de développement) — risque
+  de taille de fonction, cold start, ou incompatibilité pure et simple.
+- Ses dépendances d'installation (`node-pre-gyp`/`tar`/`adm-zip`)
+  portaient 6 vulnérabilités HIGH + 1 CRITICAL.
+- Fiabilité de détection jamais testée sur une vraie photo de visage
+  (seulement un pipeline validé mécaniquement sur image synthétique).
 
-**Risques non vérifiés, à tester après déploiement :**
+**En attendant, le formulaire invite les déclarants à cadrer sur
+l'étiquette et à éviter de photographier des personnes reconnaissables.**
 
-- **Dépendance native lourde.** Nécessite `@tensorflow/tfjs-node`
-  (binaire natif compilé, pas de version JS pure compatible avec ce
-  paquet). Sharp fonctionne bien sur Vercel, mais `tfjs-node` est un
-  poids beaucoup plus lourd et moins couramment déployé en serverless —
-  **son fonctionnement sur les fonctions serverless Vercel n'a pas pu
-  être vérifié** (réseau bloqué dans cet environnement de dev). Risques
-  concrets : dépassement de la taille limite d'une fonction, temps de
-  démarrage à froid allongé (le binaire natif + le modèle doivent se
-  charger à chaque cold start), voire incompatibilité pure et simple
-  selon la version glibc du runtime Vercel.
-- **Dépendances de build vulnérables.** L'installation de `tfjs-node`
-  passe par `node-pre-gyp`, qui dépend de versions anciennes de `tar` et
-  `adm-zip` : `npm audit` remonte 6 vulnérabilités HIGH et 1 CRITICAL
-  (traversée de chemin / zip bomb dans les outils d'installation). Ce
-  sont des dépendances d'installation, pas du code exécuté à la demande
-  d'un visiteur qui uploade une photo — mais elles restent dans
-  `node_modules` et méritent d'être surveillées (`npm audit`) avant une
-  mise en production sérieuse.
-- **Précision non garantie.** `tiny_face_detector` est le modèle le plus
-  léger de la bibliothèque (rapide, mais moins précis que ses
-  alternatives plus lourdes) : visages petits, de profil, partiellement
-  masqués ou mal éclairés peuvent ne pas être détectés. **Je n'ai pas pu
-  tester la détection sur une vraie photo de visage** dans cet
-  environnement (pas d'appareil photo, pas de photo réelle disponible ;
-  j'ai délibérément évité d'utiliser l'outil de génération d'image
-  payant sans votre accord). Le pipeline est validé mécaniquement (charge
-  le modèle, tourne sans erreur, ne détecte rien sur une image de test
-  synthétique) mais **pas la fiabilité réelle de détection** — à tester
-  avec de vraies photos avant de compter dessus pour la confidentialité.
+### Réactiver le floutage plus tard
 
-**Recommandation :** traiter cette fonctionnalité comme bêta. Tester
-avec une vraie photo contenant un visage dès le premier déploiement, et
-prévoir un plan B (ex. modération manuelle des photos avec personnes
-visibles) si la fiabilité ou la compatibilité Vercel s'avère insuffisante.
+1. Récupérer le code retiré :
+   `git show 39306da:lib/faceBlur.ts > lib/faceBlur.ts`
+2. Réinstaller les dépendances :
+   `npm install @tensorflow/tfjs @tensorflow/tfjs-node @vladmandic/face-api`
+3. Dans `lib/upload.ts`, réimporter `blurFaces` et rétablir l'appel
+   `await blurFaces(rawBuffer)` avant `stripMetadataAndCompress` (voir
+   le diff du commit `39306da` pour l'emplacement exact).
+4. Retirer les mentions « temporairement désactivé » dans
+   `components/SignalementForm.tsx`, `app/comment-ca-marche/page.tsx` et
+   `app/mentions-legales/page.tsx`.
+5. **Tester avec une vraie photo contenant un visage en local, puis sur
+   un déploiement preview Vercel**, avant toute mise en production —
+   c'est précisément ce qui n'a pas pu être fait la première fois.
 
 ## Tracking et vie privée
 
@@ -170,7 +158,7 @@ protection anti-bot demandée.
 | **Turso** | Base de données | ~9 Go stockage, 1 milliard de lectures/mois (offre gratuite actuelle, à reconfirmer sur turso.tech) | Au-delà : passage payant |
 | **Vercel Blob** | Stockage des photos | Quota inclus dans le plan Vercel Hobby (faible, de l'ordre du Go) | Peut se remplir vite avec des photos ; suivre l'usage dans le dashboard Vercel |
 | **Cloudflare Turnstile** | CAPTCHA | Gratuit, sans limite de volume publiée | Nécessite un compte Cloudflare (gratuit) |
-| **Vercel Hobby** | Hébergement | Gratuit pour usage non-commercial | Limites de bande passante / temps d'exécution des fonctions ; le floutage de visage (calcul lourd) pourrait consommer plus de temps de fonction que la moyenne |
+| **Vercel Hobby** | Hébergement | Gratuit pour usage non-commercial | Limites de bande passante / temps d'exécution des fonctions |
 
 Chiffres à reconfirmer sur les sites officiels au moment de la mise en
 production — les forfaits gratuits évoluent.
@@ -189,8 +177,10 @@ variable d'environnement n'est requise pour développer en local (voir
 ## Stack
 
 Next.js (App Router) · TypeScript · Tailwind CSS · Turso (`@libsql/client`)
-· Vercel Blob (`@vercel/blob`) · `@vladmandic/face-api` + `@tensorflow/tfjs-node`
-(floutage de visages) · Cloudflare Turnstile
+· Vercel Blob (`@vercel/blob`) · Cloudflare Turnstile
+
+(`@vladmandic/face-api` + `@tensorflow/tfjs-node` pour le floutage de
+visages, actuellement retirés — voir section dédiée ci-dessus)
 
 ## Production vs local
 

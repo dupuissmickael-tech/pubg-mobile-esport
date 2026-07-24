@@ -13,7 +13,9 @@ const CSP = [
   "default-src 'self'",
   `script-src 'self' https://challenges.cloudflare.com${isDev ? " 'unsafe-eval' 'unsafe-inline'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: https://*.public.blob.vercel-storage.com",
+  // blob: est nécessaire pour l'aperçu local de la photo choisie
+  // (URL.createObjectURL) avant l'envoi du formulaire.
+  "img-src 'self' data: blob: https://*.public.blob.vercel-storage.com",
   "font-src 'self'",
   `connect-src 'self' https://challenges.cloudflare.com${isDev ? " ws:" : ""}`,
   "frame-src https://challenges.cloudflare.com",

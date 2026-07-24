@@ -40,9 +40,12 @@ export default function CommentCaMarchePage() {
             n&apos;est demandée.
           </p>
           <p>
-            Avant l&apos;envoi, la photo est automatiquement retouchée : les
-            visages visibles sont floutés et les métadonnées (position GPS,
-            heure précise, modèle du téléphone) sont supprimées.
+            Avant l&apos;envoi, la photo est automatiquement retouchée :
+            les métadonnées (position GPS, heure précise, modèle du
+            téléphone) sont supprimées. Le floutage automatique des
+            visages est temporairement désactivé le temps d&apos;être
+            testé plus largement — cadrez si possible sur
+            l&apos;étiquette uniquement.
           </p>
         </section>
 

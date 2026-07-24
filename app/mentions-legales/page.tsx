@@ -69,10 +69,12 @@ export default function MentionsLegalesPage() {
             personnelle identifiante (ni nom, ni email, ni compte). Les
             photos jointes sont automatiquement retouchées avant publication
             : suppression des métadonnées EXIF (position GPS, horodatage,
-            modèle d&apos;appareil) et floutage des visages détectés. Un
-            cookie technique anonyme et temporaire (1 heure) limite le nombre
-            de signalements par navigateur ; il n&apos;identifie pas
-            l&apos;utilisateur et n&apos;est pas partagé avec un tiers.
+            modèle d&apos;appareil). Le floutage automatique des visages
+            détectés est temporairement désactivé ; évitez de photographier
+            des personnes reconnaissables. Un cookie technique anonyme et
+            temporaire (1 heure) limite le nombre de signalements par
+            navigateur ; il n&apos;identifie pas l&apos;utilisateur et
+            n&apos;est pas partagé avec un tiers.
           </p>
         </section>
 

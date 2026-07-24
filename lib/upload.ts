@@ -3,7 +3,6 @@ import fs from "node:fs/promises";
 import crypto from "node:crypto";
 import sharp from "sharp";
 import exifr from "exifr";
-import { blurFaces } from "@/lib/faceBlur";
 import { computePerceptualHash } from "@/lib/phash";
 
 const ALLOWED_TYPES: Record<string, string> = {
@@ -137,11 +136,14 @@ export async function saveUploadedPhoto(file: File): Promise<UploadedPhoto> {
   const rawBuffer = Buffer.from(await file.arrayBuffer());
 
   const { authentic, reason } = await checkAuthenticity(rawBuffer);
-  const blurredBuffer = await blurFaces(rawBuffer);
 
+  // Floutage de visages désactivé pour ce déploiement : dépendance native
+  // (tfjs-node) non vérifiée sur les fonctions serverless Vercel. Code
+  // conservé dans l'historique git (lib/faceBlur.ts, commit 39306da) —
+  // voir README pour la procédure de réactivation.
   let finalBuffer: Buffer;
   try {
-    finalBuffer = await stripMetadataAndCompress(blurredBuffer, file.type);
+    finalBuffer = await stripMetadataAndCompress(rawBuffer, file.type);
   } catch {
     throw new Error(
       "Impossible de traiter cette image. Essayez une autre photo."

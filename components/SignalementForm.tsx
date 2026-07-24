@@ -244,8 +244,9 @@ export default function SignalementForm() {
         )}
         <p className="mt-1 text-xs text-veypri-ink/50">
           JPEG, PNG ou WebP — 5 Mo maximum. La date du signalement est
-          enregistrée automatiquement. Les visages présents sur la photo
-          sont automatiquement floutés.
+          enregistrée automatiquement. Cadrez si possible sur
+          l&apos;étiquette uniquement : le floutage automatique des
+          visages est temporairement désactivé.
         </p>
       </div>
 
