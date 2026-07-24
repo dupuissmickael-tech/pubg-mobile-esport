@@ -35,6 +35,7 @@ function ensureSchema(): Promise<void> {
           created_at TEXT NOT NULL,
           status TEXT NOT NULL DEFAULT 'published',
           exif_notes TEXT NOT NULL DEFAULT '',
+          metadata_verified INTEGER NOT NULL DEFAULT 1,
           flag_count INTEGER NOT NULL DEFAULT 0
         );
       `);
@@ -50,7 +51,8 @@ function ensureSchema(): Promise<void> {
   return schemaReady;
 }
 
-export type SignalementStatus = "published" | "pending_review" | "rejected";
+/** "rejected" retire un signalement de la publication (action admin). */
+export type SignalementStatus = "published" | "rejected";
 
 export interface Signalement {
   id: number;
@@ -62,6 +64,8 @@ export interface Signalement {
   created_at: string;
   status: SignalementStatus;
   exif_notes: string;
+  /** Résultat de la vérification EXIF — jamais exposé publiquement, réservé à /admin. */
+  metadata_verified: boolean;
   flag_count: number;
 }
 
@@ -76,13 +80,14 @@ function rowToSignalement(row: Record<string, unknown>): Signalement {
     created_at: String(row.created_at),
     status: row.status as SignalementStatus,
     exif_notes: String(row.exif_notes),
+    metadata_verified: Number(row.metadata_verified) === 1,
     flag_count: Number(row.flag_count),
   };
 }
 
 const SELECT_COLUMNS = `
   id, magasin, produit, prix_observe, prix_plafond_bqp, photo_url, created_at,
-  status, exif_notes, flag_count
+  status, exif_notes, metadata_verified, flag_count
 `;
 
 export async function insertSignalement(
@@ -92,8 +97,8 @@ export async function insertSignalement(
   const result = await client.execute({
     sql: `
       INSERT INTO signalements
-        (magasin, produit, prix_observe, prix_plafond_bqp, photo_url, created_at, status, exif_notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        (magasin, produit, prix_observe, prix_plafond_bqp, photo_url, created_at, status, exif_notes, metadata_verified)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `,
     args: [
       data.magasin,
@@ -104,12 +109,13 @@ export async function insertSignalement(
       data.created_at,
       data.status,
       data.exif_notes,
+      data.metadata_verified ? 1 : 0,
     ],
   });
   return { id: Number(result.lastInsertRowid), flag_count: 0, ...data };
 }
 
-/** Liste publique : uniquement les signalements publiés. */
+/** Liste publique : tous les signalements publiés (vérifiés ou non). */
 export async function listRecentSignalements(
   limit = 50
 ): Promise<Signalement[]> {
@@ -127,8 +133,8 @@ export async function listRecentSignalements(
   return result.rows.map((row) => rowToSignalement(row as Record<string, unknown>));
 }
 
-/** File de modération admin : signalements en attente de vérification. */
-export async function listPendingSignalements(
+/** Admin : signalements publiés dont les métadonnées EXIF n'ont pas pu être vérifiées. */
+export async function listUnverifiedSignalements(
   limit = 100
 ): Promise<Signalement[]> {
   await ensureSchema();
@@ -136,8 +142,8 @@ export async function listPendingSignalements(
     sql: `
       SELECT ${SELECT_COLUMNS}
       FROM signalements
-      WHERE status = 'pending_review'
-      ORDER BY created_at ASC
+      WHERE status = 'published' AND metadata_verified = 0
+      ORDER BY created_at DESC
       LIMIT ?
     `,
     args: [limit],
@@ -173,7 +179,7 @@ export async function incrementFlagCount(id: number): Promise<void> {
 
 export async function setSignalementStatus(
   id: number,
-  status: "published" | "rejected"
+  status: SignalementStatus
 ): Promise<void> {
   await ensureSchema();
   await client.execute({

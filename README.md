@@ -12,23 +12,29 @@ plafond officiel du Bouclier Qualité Prix (BQP).
 - Aucun compte, aucune donnée personnelle collectée
 - Suppression automatique des métadonnées EXIF (GPS, modèle, horodatage)
   des photos avant stockage
-- Vérification anti-fraude légère (voir ci-dessous) + file de modération
+- Vérification anti-fraude légère (voir ci-dessous), sans jamais bloquer
+  la publication
 - Bouton « Signaler comme douteux » sur chaque entrée publique
 - Limite de 3 signalements par heure et par navigateur (anti-spam)
-- Page `/admin` protégée par mot de passe (file de modération, compteur
-  de signalements suspects)
+- Page `/admin` protégée par mot de passe (badge métadonnées non
+  vérifiées, compteur de signalements suspects)
 
 ## Anti-fraude : ce qui est fait, et ses limites
 
 Avant de supprimer les métadonnées EXIF d'une photo, VeyPri vérifie
 qu'elle contient un modèle d'appareil et une date de prise de vue dans
-les dernières 48h. Si ce n'est pas le cas, le signalement est mis de
-côté dans une file de modération (`/admin`) au lieu d'être publié
-immédiatement.
+les dernières 48h. **Le signalement est publié immédiatement dans tous
+les cas** — le résultat sert uniquement de badge de modération interne
+(« métadonnées non vérifiées »), visible seulement sur `/admin`, jamais
+par le public. Ce choix est délibéré : bloquer la publication aurait
+pénalisé de vrais citoyens (voir plus bas), pour un gain anti-fraude
+limité puisque les métadonnées se falsifient facilement de toute façon.
 
 **Ce que ça détecte :** les captures d'écran, les images réutilisées ou
 téléchargées ailleurs, et les photos dont les métadonnées ont été
-supprimées en cours de route (par ex. par une appli de messagerie).
+supprimées en cours de route (par ex. par une appli de messagerie) — de
+quoi orienter une revue manuelle a posteriori, sans jamais retarder la
+publication.
 
 **Ce que ça ne détecte PAS :**
 
@@ -36,12 +42,11 @@ supprimées en cours de route (par ex. par une appli de messagerie).
   outil gratuit (exiftool, etc.) permet de réécrire le modèle d'appareil
   et la date avant l'envoi. Cette vérification arrête la négligence, pas
   la fraude déterminée.
-- **Les faux positifs sur de vraies photos.** Beaucoup d'utilisateurs
-  s'envoient leur photo via WhatsApp/Messenger/Signal avant de l'uploader
-  — ces applis suppriment souvent l'EXIF à l'envoi. Une photo 100 %
-  authentique peut donc atterrir dans la file de modération. À surveiller
-  une fois en usage réel : si la file se remplit trop, le seuil devra
-  être assoupli.
+- **Un badge « non vérifié » à tort sur une vraie photo.** Beaucoup
+  d'utilisateurs s'envoient leur photo via WhatsApp/Messenger/Signal
+  avant de l'uploader — ces applis suppriment souvent l'EXIF à l'envoi.
+  Une photo 100 % authentique peut donc porter ce badge en interne, sans
+  aucune conséquence publique puisqu'elle reste publiée normalement.
 - **Le contenu de la photo.** Rien ne vérifie qu'elle montre vraiment le
   magasin et le produit déclarés dans le formulaire — une photo récente
   et authentique d'une autre étiquette, ou d'un prix modifié à la main,

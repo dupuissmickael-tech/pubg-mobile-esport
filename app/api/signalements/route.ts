@@ -99,6 +99,10 @@ export async function POST(request: NextRequest) {
     return withRateLimitCookie(NextResponse.json({ error: message }, { status: 400 }), token);
   }
 
+  // Publié immédiatement dans tous les cas : une photo dont les métadonnées
+  // ne sont pas vérifiables (ex. renvoyée via WhatsApp, qui strippe l'EXIF)
+  // est presque toujours légitime. metadata_verified sert de signal de
+  // modération interne, jamais de blocage à la publication.
   const signalement = await insertSignalement({
     magasin: magasin as string,
     produit: produit as string,
@@ -106,15 +110,13 @@ export async function POST(request: NextRequest) {
     prix_plafond_bqp: prixPlafond as number,
     photo_url: photoUrl,
     created_at: new Date().toISOString(),
-    status: authentic ? "published" : "pending_review",
+    status: "published",
     exif_notes: reason,
+    metadata_verified: authentic,
   });
 
   return withRateLimitCookie(
-    NextResponse.json(
-      { signalement: { ...toPublicShape(signalement), status: signalement.status } },
-      { status: 201 }
-    ),
+    NextResponse.json({ signalement: toPublicShape(signalement) }, { status: 201 }),
     token
   );
 }
