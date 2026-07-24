@@ -1,38 +1,46 @@
-import { DatabaseSync } from "node:sqlite";
-import path from "node:path";
-import fs from "node:fs";
+import { createClient, type Client } from "@libsql/client";
 
-const dataDir = path.join(process.cwd(), "data");
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
-}
-
-const dbPath = path.join(dataDir, "veypri.db");
+// En production : TURSO_DATABASE_URL (libsql://...) + TURSO_AUTH_TOKEN.
+// En local sans compte Turso : repli sur un fichier SQLite local, géré par
+// le même client libSQL (mode "embedded", aucun réseau requis).
+const url = process.env.TURSO_DATABASE_URL ?? "file:./data/veypri.db";
+const authToken = process.env.TURSO_AUTH_TOKEN;
 
 declare global {
   // eslint-disable-next-line no-var
-  var __veypriDb: DatabaseSync | undefined;
+  var __veypriClient: Client | undefined;
 }
 
-const db = globalThis.__veypriDb ?? new DatabaseSync(dbPath);
+const client: Client =
+  globalThis.__veypriClient ??
+  createClient(authToken ? { url, authToken } : { url });
 
 if (process.env.NODE_ENV !== "production") {
-  globalThis.__veypriDb = db;
+  globalThis.__veypriClient = client;
 }
 
-db.exec("PRAGMA journal_mode = WAL;");
+let schemaReady: Promise<void> | null = null;
 
-db.exec(`
-  CREATE TABLE IF NOT EXISTS signalements (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    magasin TEXT NOT NULL,
-    produit TEXT NOT NULL,
-    prix_observe REAL NOT NULL,
-    prix_plafond_bqp REAL NOT NULL,
-    photo_filename TEXT NOT NULL,
-    created_at TEXT NOT NULL
-  );
-`);
+function ensureSchema(): Promise<void> {
+  if (!schemaReady) {
+    schemaReady = client
+      .execute(
+        `
+        CREATE TABLE IF NOT EXISTS signalements (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          magasin TEXT NOT NULL,
+          produit TEXT NOT NULL,
+          prix_observe REAL NOT NULL,
+          prix_plafond_bqp REAL NOT NULL,
+          photo_url TEXT NOT NULL,
+          created_at TEXT NOT NULL
+        );
+      `
+      )
+      .then(() => undefined);
+  }
+  return schemaReady;
+}
 
 export interface Signalement {
   id: number;
@@ -40,36 +48,53 @@ export interface Signalement {
   produit: string;
   prix_observe: number;
   prix_plafond_bqp: number;
-  photo_filename: string;
+  photo_url: string;
   created_at: string;
 }
 
-export function insertSignalement(
+export async function insertSignalement(
   data: Omit<Signalement, "id">
-): Signalement {
-  const stmt = db.prepare(`
-    INSERT INTO signalements (magasin, produit, prix_observe, prix_plafond_bqp, photo_filename, created_at)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `);
-  const result = stmt.run(
-    data.magasin,
-    data.produit,
-    data.prix_observe,
-    data.prix_plafond_bqp,
-    data.photo_filename,
-    data.created_at
-  );
+): Promise<Signalement> {
+  await ensureSchema();
+  const result = await client.execute({
+    sql: `
+      INSERT INTO signalements (magasin, produit, prix_observe, prix_plafond_bqp, photo_url, created_at)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `,
+    args: [
+      data.magasin,
+      data.produit,
+      data.prix_observe,
+      data.prix_plafond_bqp,
+      data.photo_url,
+      data.created_at,
+    ],
+  });
   return { id: Number(result.lastInsertRowid), ...data };
 }
 
-export function listRecentSignalements(limit = 50): Signalement[] {
-  const stmt = db.prepare(`
-    SELECT id, magasin, produit, prix_observe, prix_plafond_bqp, photo_filename, created_at
-    FROM signalements
-    ORDER BY created_at DESC, id DESC
-    LIMIT ?
-  `);
-  return stmt.all(limit) as unknown as Signalement[];
+export async function listRecentSignalements(
+  limit = 50
+): Promise<Signalement[]> {
+  await ensureSchema();
+  const result = await client.execute({
+    sql: `
+      SELECT id, magasin, produit, prix_observe, prix_plafond_bqp, photo_url, created_at
+      FROM signalements
+      ORDER BY created_at DESC, id DESC
+      LIMIT ?
+    `,
+    args: [limit],
+  });
+  return result.rows.map((row) => ({
+    id: Number(row.id),
+    magasin: String(row.magasin),
+    produit: String(row.produit),
+    prix_observe: Number(row.prix_observe),
+    prix_plafond_bqp: Number(row.prix_plafond_bqp),
+    photo_url: String(row.photo_url),
+    created_at: String(row.created_at),
+  }));
 }
 
-export default db;
+export default client;

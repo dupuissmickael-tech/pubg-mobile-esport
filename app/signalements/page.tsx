@@ -18,8 +18,8 @@ const priceFormatter = new Intl.NumberFormat("fr-FR", {
   currency: "EUR",
 });
 
-export default function SignalementsPage() {
-  const signalements = listRecentSignalements(50);
+export default async function SignalementsPage() {
+  const signalements = await listRecentSignalements(50);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
@@ -52,7 +52,7 @@ function SignalementCard({ signalement }: { signalement: Signalement }) {
     produit,
     prix_observe,
     prix_plafond_bqp,
-    photo_filename,
+    photo_url,
     created_at,
   } = signalement;
 
@@ -62,14 +62,14 @@ function SignalementCard({ signalement }: { signalement: Signalement }) {
   return (
     <li className="flex flex-col gap-4 rounded-lg border border-veypri-ink/10 bg-white p-5 shadow-sm sm:flex-row">
       <a
-        href={`/api/uploads/${photo_filename}`}
+        href={photo_url}
         target="_blank"
         rel="noopener noreferrer"
         className="shrink-0"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={`/api/uploads/${photo_filename}`}
+          src={photo_url}
           alt={`Preuve photo : ${produit} chez ${magasin}`}
           className="h-28 w-28 rounded border border-veypri-ink/10 object-cover"
         />

@@ -23,7 +23,19 @@ Puis ouvrir [http://localhost:3000](http://localhost:3000).
 
 ## Stack
 
-Next.js (App Router) · TypeScript · Tailwind CSS · SQLite (`node:sqlite`)
+Next.js (App Router) · TypeScript · Tailwind CSS · Turso (`@libsql/client`)
+· Vercel Blob (`@vercel/blob`)
+
+## Production vs local
+
+| | Local (par défaut) | Production (Vercel) |
+|---|---|---|
+| Base de données | fichier SQLite local (`./data/veypri.db`) via le même client libSQL | Turso (`TURSO_DATABASE_URL` + `TURSO_AUTH_TOKEN`) |
+| Photos | disque local (`./uploads`), servies par `/api/uploads/[filename]` | Vercel Blob (`BLOB_READ_WRITE_TOKEN`, fourni automatiquement par Vercel) |
+
+Le code bascule automatiquement selon la présence de ces variables
+d'environnement — voir `.env.example`. Aucune configuration nécessaire
+pour développer en local.
 
 ---
 

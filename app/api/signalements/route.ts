@@ -4,7 +4,7 @@ import { saveUploadedPhoto } from "@/lib/upload";
 import { parsePrice, parseText } from "@/lib/validation";
 
 export async function GET() {
-  const signalements = listRecentSignalements(50);
+  const signalements = await listRecentSignalements(50);
   return NextResponse.json({ signalements });
 }
 
@@ -35,21 +35,21 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: errors.join(" ") }, { status: 400 });
   }
 
-  let photoFilename: string;
+  let photoUrl: string;
   try {
-    photoFilename = await saveUploadedPhoto(photo as File);
+    photoUrl = await saveUploadedPhoto(photo as File);
   } catch (err) {
     const message =
       err instanceof Error ? err.message : "Erreur lors de l'enregistrement de la photo.";
     return NextResponse.json({ error: message }, { status: 400 });
   }
 
-  const signalement = insertSignalement({
+  const signalement = await insertSignalement({
     magasin: magasin as string,
     produit: produit as string,
     prix_observe: prixObserve as number,
     prix_plafond_bqp: prixPlafond as number,
-    photo_filename: photoFilename,
+    photo_url: photoUrl,
     created_at: new Date().toISOString(),
   });
 
