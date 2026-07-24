@@ -3,6 +3,8 @@ import fs from "node:fs/promises";
 import crypto from "node:crypto";
 import sharp from "sharp";
 import exifr from "exifr";
+import { blurFaces } from "@/lib/faceBlur";
+import { computePerceptualHash } from "@/lib/phash";
 
 const ALLOWED_TYPES: Record<string, string> = {
   "image/jpeg": "jpg",
@@ -13,6 +15,7 @@ const ALLOWED_TYPES: Record<string, string> = {
 const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5 Mo
 const MAX_PHOTO_AGE_MS = 48 * 60 * 60 * 1000; // 48h
 const FUTURE_TOLERANCE_MS = 60 * 60 * 1000; // 1h de marge (horloges d'appareil imprécises)
+const MAX_DIMENSION = 1600; // compression : plus grand côté après redimensionnement
 
 const uploadsDir = path.join(process.cwd(), "uploads");
 
@@ -38,7 +41,7 @@ export interface AuthenticityCheck {
 }
 
 /**
- * Vérifie, sur la photo BRUTE (avant suppression EXIF), qu'elle ressemble à
+ * Vérifie, sur la photo BRUTE (avant tout traitement), qu'elle ressemble à
  * une vraie prise de vue récente par un smartphone : modèle d'appareil
  * présent et date de prise de vue dans les dernières 48h. Ne prouve ni
  * l'authenticité du contenu (le prix, le magasin) ni l'absence de
@@ -91,26 +94,35 @@ async function checkAuthenticity(buffer: Buffer): Promise<AuthenticityCheck> {
 }
 
 /**
- * Ré-encode l'image sans ses métadonnées (EXIF, ICC, XMP) : les photos de
- * téléphone embarquent souvent la géolocalisation GPS, l'horodatage précis
- * et le modèle de l'appareil, ce qui romprait l'anonymat promis aux
- * déclarants. `.rotate()` applique l'orientation EXIF avant suppression
- * pour que l'image reste correctement orientée une fois celle-ci retirée.
- * Toujours appliqué, y compris pour les photos mises en file de
- * modération : la vérification d'authenticité ne doit pas devenir un
- * prétexte pour conserver des métadonnées identifiantes.
+ * Ré-encode l'image sans ses métadonnées (EXIF, ICC, XMP), redimensionnée
+ * pour limiter le poids de stockage. `.rotate()` applique l'orientation
+ * EXIF avant suppression pour que l'image reste correctement orientée.
+ * Toujours appliqué, y compris pour les photos aux métadonnées non
+ * vérifiées : la vérification ne doit pas devenir un prétexte pour
+ * conserver des données identifiantes.
  */
-async function stripMetadata(buffer: Buffer, mimeType: string): Promise<Buffer> {
-  const image = sharp(buffer).rotate();
-  if (mimeType === "image/png") return image.png().toBuffer();
-  if (mimeType === "image/webp") return image.webp().toBuffer();
-  return image.jpeg().toBuffer();
+async function stripMetadataAndCompress(
+  buffer: Buffer,
+  mimeType: string
+): Promise<Buffer> {
+  const image = sharp(buffer)
+    .rotate()
+    .resize({
+      width: MAX_DIMENSION,
+      height: MAX_DIMENSION,
+      fit: "inside",
+      withoutEnlargement: true,
+    });
+  if (mimeType === "image/png") return image.png({ compressionLevel: 8 }).toBuffer();
+  if (mimeType === "image/webp") return image.webp({ quality: 80 }).toBuffer();
+  return image.jpeg({ quality: 80, mozjpeg: true }).toBuffer();
 }
 
 export interface UploadedPhoto {
   url: string;
   authentic: boolean;
   reason: string;
+  hash: string;
 }
 
 /**
@@ -125,27 +137,30 @@ export async function saveUploadedPhoto(file: File): Promise<UploadedPhoto> {
   const rawBuffer = Buffer.from(await file.arrayBuffer());
 
   const { authentic, reason } = await checkAuthenticity(rawBuffer);
+  const blurredBuffer = await blurFaces(rawBuffer);
 
-  let cleanedBuffer: Buffer;
+  let finalBuffer: Buffer;
   try {
-    cleanedBuffer = await stripMetadata(rawBuffer, file.type);
+    finalBuffer = await stripMetadataAndCompress(blurredBuffer, file.type);
   } catch {
     throw new Error(
       "Impossible de traiter cette image. Essayez une autre photo."
     );
   }
 
+  const hash = await computePerceptualHash(finalBuffer).catch(() => "");
+
   if (process.env.BLOB_READ_WRITE_TOKEN) {
     const { put } = await import("@vercel/blob");
-    const blob = await put(filename, cleanedBuffer, {
+    const blob = await put(filename, finalBuffer, {
       access: "public",
       contentType: file.type,
     });
-    return { url: blob.url, authentic, reason };
+    return { url: blob.url, authentic, reason, hash };
   }
 
   await fs.mkdir(uploadsDir, { recursive: true });
   const filePath = path.join(uploadsDir, filename);
-  await fs.writeFile(filePath, cleanedBuffer);
-  return { url: `/api/uploads/${filename}`, authentic, reason };
+  await fs.writeFile(filePath, finalBuffer);
+  return { url: `/api/uploads/${filename}`, authentic, reason, hash };
 }

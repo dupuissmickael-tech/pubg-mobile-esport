@@ -1,4 +1,5 @@
 import { createClient, type Client } from "@libsql/client";
+import { hammingDistance, DUPLICATE_THRESHOLD } from "@/lib/phash";
 
 // En production : TURSO_DATABASE_URL (libsql://...) + TURSO_AUTH_TOKEN.
 // En local sans compte Turso : repli sur un fichier SQLite local, géré par
@@ -29,9 +30,12 @@ function ensureSchema(): Promise<void> {
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           magasin TEXT NOT NULL,
           produit TEXT NOT NULL,
+          categorie TEXT NOT NULL DEFAULT 'Autre',
+          commune TEXT NOT NULL DEFAULT '',
           prix_observe REAL NOT NULL,
           prix_plafond_bqp REAL NOT NULL,
           photo_url TEXT NOT NULL,
+          photo_hash TEXT NOT NULL DEFAULT '',
           created_at TEXT NOT NULL,
           status TEXT NOT NULL DEFAULT 'published',
           exif_notes TEXT NOT NULL DEFAULT '',
@@ -46,6 +50,12 @@ function ensureSchema(): Promise<void> {
           window_start TEXT NOT NULL
         );
       `);
+      await client.execute(`
+        CREATE TABLE IF NOT EXISTS magasins (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          nom TEXT NOT NULL UNIQUE
+        );
+      `);
     })();
   }
   return schemaReady;
@@ -58,9 +68,13 @@ export interface Signalement {
   id: number;
   magasin: string;
   produit: string;
+  categorie: string;
+  commune: string;
   prix_observe: number;
   prix_plafond_bqp: number;
   photo_url: string;
+  /** Hash perceptuel — jamais exposé publiquement, sert à repérer les doublons sur /admin. */
+  photo_hash: string;
   created_at: string;
   status: SignalementStatus;
   exif_notes: string;
@@ -74,9 +88,12 @@ function rowToSignalement(row: Record<string, unknown>): Signalement {
     id: Number(row.id),
     magasin: String(row.magasin),
     produit: String(row.produit),
+    categorie: String(row.categorie),
+    commune: String(row.commune),
     prix_observe: Number(row.prix_observe),
     prix_plafond_bqp: Number(row.prix_plafond_bqp),
     photo_url: String(row.photo_url),
+    photo_hash: String(row.photo_hash),
     created_at: String(row.created_at),
     status: row.status as SignalementStatus,
     exif_notes: String(row.exif_notes),
@@ -86,8 +103,8 @@ function rowToSignalement(row: Record<string, unknown>): Signalement {
 }
 
 const SELECT_COLUMNS = `
-  id, magasin, produit, prix_observe, prix_plafond_bqp, photo_url, created_at,
-  status, exif_notes, metadata_verified, flag_count
+  id, magasin, produit, categorie, commune, prix_observe, prix_plafond_bqp,
+  photo_url, photo_hash, created_at, status, exif_notes, metadata_verified, flag_count
 `;
 
 export async function insertSignalement(
@@ -97,15 +114,19 @@ export async function insertSignalement(
   const result = await client.execute({
     sql: `
       INSERT INTO signalements
-        (magasin, produit, prix_observe, prix_plafond_bqp, photo_url, created_at, status, exif_notes, metadata_verified)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (magasin, produit, categorie, commune, prix_observe, prix_plafond_bqp,
+         photo_url, photo_hash, created_at, status, exif_notes, metadata_verified)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `,
     args: [
       data.magasin,
       data.produit,
+      data.categorie,
+      data.commune,
       data.prix_observe,
       data.prix_plafond_bqp,
       data.photo_url,
+      data.photo_hash,
       data.created_at,
       data.status,
       data.exif_notes,
@@ -115,22 +136,49 @@ export async function insertSignalement(
   return { id: Number(result.lastInsertRowid), flag_count: 0, ...data };
 }
 
-/** Liste publique : tous les signalements publiés (vérifiés ou non). */
+export interface SignalementFilters {
+  categorie?: string;
+  commune?: string;
+}
+
+/** Liste publique : tous les signalements publiés (vérifiés ou non), avec filtres optionnels. */
 export async function listRecentSignalements(
-  limit = 50
+  limit = 50,
+  filters: SignalementFilters = {}
 ): Promise<Signalement[]> {
   await ensureSchema();
+  const conditions = ["status = 'published'"];
+  const args: (string | number)[] = [];
+
+  if (filters.categorie) {
+    conditions.push("categorie = ?");
+    args.push(filters.categorie);
+  }
+  if (filters.commune) {
+    conditions.push("commune = ?");
+    args.push(filters.commune);
+  }
+  args.push(limit);
+
   const result = await client.execute({
     sql: `
       SELECT ${SELECT_COLUMNS}
       FROM signalements
-      WHERE status = 'published'
+      WHERE ${conditions.join(" AND ")}
       ORDER BY created_at DESC, id DESC
       LIMIT ?
     `,
-    args: [limit],
+    args,
   });
   return result.rows.map((row) => rowToSignalement(row as Record<string, unknown>));
+}
+
+export async function countPublishedSignalements(): Promise<number> {
+  await ensureSchema();
+  const result = await client.execute(
+    `SELECT COUNT(*) as total FROM signalements WHERE status = 'published'`
+  );
+  return Number(result.rows[0]?.total ?? 0);
 }
 
 /** Admin : signalements publiés dont les métadonnées EXIF n'ont pas pu être vérifiées. */
@@ -169,6 +217,54 @@ export async function listFlaggedSignalements(
   return result.rows.map((row) => rowToSignalement(row as Record<string, unknown>));
 }
 
+export interface DuplicateGroup {
+  signalement: Signalement;
+  matches: Signalement[];
+}
+
+/**
+ * Admin : regroupe les signalements publiés dont le hash perceptuel de la
+ * photo est très proche (probable doublon). Calculé à la volée — O(n²) sur
+ * les signalements publiés, largement suffisant au volume attendu pour ce
+ * projet ; à revoir si la base grossit fortement.
+ */
+export async function listPossibleDuplicates(
+  limit = 500
+): Promise<DuplicateGroup[]> {
+  await ensureSchema();
+  const result = await client.execute({
+    sql: `
+      SELECT ${SELECT_COLUMNS}
+      FROM signalements
+      WHERE status = 'published' AND photo_hash != ''
+      ORDER BY created_at DESC
+      LIMIT ?
+    `,
+    args: [limit],
+  });
+  const all = result.rows.map((row) => rowToSignalement(row as Record<string, unknown>));
+
+  const groups: DuplicateGroup[] = [];
+  const seen = new Set<number>();
+
+  for (const s of all) {
+    if (seen.has(s.id)) continue;
+    const matches = all.filter(
+      (other) =>
+        other.id !== s.id &&
+        !seen.has(other.id) &&
+        hammingDistance(s.photo_hash, other.photo_hash) <= DUPLICATE_THRESHOLD
+    );
+    if (matches.length > 0) {
+      seen.add(s.id);
+      matches.forEach((m) => seen.add(m.id));
+      groups.push({ signalement: s, matches });
+    }
+  }
+
+  return groups;
+}
+
 export async function incrementFlagCount(id: number): Promise<void> {
   await ensureSchema();
   await client.execute({
@@ -185,6 +281,25 @@ export async function setSignalementStatus(
   await client.execute({
     sql: `UPDATE signalements SET status = ? WHERE id = ?`,
     args: [status, id],
+  });
+}
+
+export async function listMagasins(): Promise<string[]> {
+  await ensureSchema();
+  const result = await client.execute(
+    `SELECT nom FROM magasins ORDER BY nom COLLATE NOCASE ASC`
+  );
+  return result.rows.map((row) => String(row.nom));
+}
+
+/** Enregistre le magasin s'il n'existe pas déjà (insensible à la casse/espaces). */
+export async function ensureMagasin(nom: string): Promise<void> {
+  await ensureSchema();
+  const trimmed = nom.trim();
+  if (!trimmed) return;
+  await client.execute({
+    sql: `INSERT INTO magasins (nom) VALUES (?) ON CONFLICT(nom) DO NOTHING`,
+    args: [trimmed],
   });
 }
 

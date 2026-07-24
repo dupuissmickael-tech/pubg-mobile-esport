@@ -1,6 +1,11 @@
 import Link from "next/link";
+import { countPublishedSignalements } from "@/lib/db";
 
-export default function HomePage() {
+export const dynamic = "force-dynamic";
+
+export default async function HomePage() {
+  const total = await countPublishedSignalements();
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-14">
       <section className="text-center">
@@ -9,6 +14,9 @@ export default function HomePage() {
           minute et de façon anonyme, un écart entre le prix observé en
           magasin et le prix plafond du Bouclier Qualité Prix (BQP).
         </h1>
+        <p className="mt-4 text-sm font-medium text-veypri-green">
+          {total} signalement{total !== 1 ? "s" : ""} depuis le lancement
+        </p>
         <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
           <Link
             href="/signaler"

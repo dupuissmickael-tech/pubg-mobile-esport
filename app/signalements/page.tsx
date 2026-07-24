@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { listRecentSignalements, type Signalement } from "@/lib/db";
 import FlagButton from "@/components/FlagButton";
+import SignalementFilters from "@/components/SignalementFilters";
 
 export const metadata: Metadata = {
   title: "Signalements récents — VeyPri",
@@ -19,22 +20,32 @@ const priceFormatter = new Intl.NumberFormat("fr-FR", {
   currency: "EUR",
 });
 
-export default async function SignalementsPage() {
-  const signalements = await listRecentSignalements(50);
+export default async function SignalementsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ categorie?: string; commune?: string }>;
+}) {
+  const params = await searchParams;
+  const signalements = await listRecentSignalements(50, {
+    categorie: params.categorie,
+    commune: params.commune,
+  });
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
       <h1 className="mb-2 text-2xl font-bold text-veypri-ink">
         Signalements récents
       </h1>
-      <p className="mb-8 text-sm text-veypri-ink/70">
+      <p className="mb-6 text-sm text-veypri-ink/70">
         Observations transmises anonymement par des particuliers. Présentées
         telles que soumises, sans jugement sur les magasins cités.
       </p>
 
+      <SignalementFilters />
+
       {signalements.length === 0 ? (
         <p className="rounded border border-veypri-ink/10 bg-veypri-ink/[0.02] p-6 text-center text-sm text-veypri-ink/60">
-          Aucun signalement pour le moment.
+          Aucun signalement pour ces critères.
         </p>
       ) : (
         <ul className="space-y-4">
@@ -51,6 +62,8 @@ function SignalementCard({ signalement }: { signalement: Signalement }) {
   const {
     magasin,
     produit,
+    categorie,
+    commune,
     prix_observe,
     prix_plafond_bqp,
     photo_url,
@@ -76,6 +89,14 @@ function SignalementCard({ signalement }: { signalement: Signalement }) {
         />
       </a>
       <div className="flex-1 text-sm">
+        <div className="mb-1 flex flex-wrap gap-1.5">
+          <span className="rounded bg-veypri-ink/5 px-2 py-0.5 text-xs text-veypri-ink/60">
+            {categorie}
+          </span>
+          <span className="rounded bg-veypri-ink/5 px-2 py-0.5 text-xs text-veypri-ink/60">
+            {commune}
+          </span>
+        </div>
         <p className="text-veypri-ink">
           Prix relevé le <strong>{date}</strong> chez{" "}
           <strong>{magasin}</strong> : <strong>{produit}</strong> à{" "}

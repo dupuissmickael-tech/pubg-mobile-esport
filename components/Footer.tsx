@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Footer() {
   return (
     <footer className="mt-16 border-t border-veypri-ink/10 bg-veypri-ink/[0.02]">
@@ -21,9 +23,17 @@ export default function Footer() {
           </a>{" "}
           de la DGCCRF.
         </p>
-        <p>
+        <p className="mb-4">
           Aucun compte n&apos;est requis et aucune donnée personnelle
           n&apos;est collectée : les signalements sont anonymes.
+        </p>
+        <p className="flex gap-4 text-xs">
+          <Link href="/comment-ca-marche" className="underline hover:text-veypri-green">
+            Comment ça marche
+          </Link>
+          <Link href="/mentions-legales" className="underline hover:text-veypri-green">
+            Mentions légales
+          </Link>
         </p>
       </div>
     </footer>

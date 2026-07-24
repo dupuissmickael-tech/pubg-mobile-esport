@@ -1,6 +1,9 @@
 "use client";
 
 import { useRef, useState, type FormEvent } from "react";
+import MagasinField from "@/components/MagasinField";
+import TurnstileWidget from "@/components/TurnstileWidget";
+import { PRODUCT_CATEGORIES, GUADELOUPE_COMMUNES } from "@/lib/constants";
 
 const MAX_SIZE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -103,21 +106,7 @@ export default function SignalementForm() {
       onSubmit={handleSubmit}
       className="space-y-6 rounded-lg border border-veypri-ink/10 bg-white p-6 shadow-sm"
     >
-      <div>
-        <label htmlFor="magasin" className="mb-1 block text-sm font-medium text-veypri-ink">
-          Nom du magasin
-        </label>
-        <input
-          id="magasin"
-          name="magasin"
-          type="text"
-          required
-          minLength={2}
-          maxLength={200}
-          placeholder="Ex : Supermarché X, commune"
-          className="w-full rounded border border-veypri-ink/20 px-3 py-2 text-sm focus:border-veypri-green focus:outline-none focus:ring-1 focus:ring-veypri-green"
-        />
-      </div>
+      <MagasinField />
 
       <div>
         <label htmlFor="produit" className="mb-1 block text-sm font-medium text-veypri-ink">
@@ -133,6 +122,52 @@ export default function SignalementForm() {
           placeholder="Ex : Lait 1L demi-écrémé"
           className="w-full rounded border border-veypri-ink/20 px-3 py-2 text-sm focus:border-veypri-green focus:outline-none focus:ring-1 focus:ring-veypri-green"
         />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div>
+          <label htmlFor="categorie" className="mb-1 block text-sm font-medium text-veypri-ink">
+            Catégorie
+          </label>
+          <select
+            id="categorie"
+            name="categorie"
+            required
+            defaultValue=""
+            className="w-full rounded border border-veypri-ink/20 px-3 py-2 text-sm focus:border-veypri-green focus:outline-none focus:ring-1 focus:ring-veypri-green"
+          >
+            <option value="" disabled>
+              Choisir…
+            </option>
+            {PRODUCT_CATEGORIES.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label htmlFor="commune" className="mb-1 block text-sm font-medium text-veypri-ink">
+            Commune
+          </label>
+          <select
+            id="commune"
+            name="commune"
+            required
+            defaultValue=""
+            className="w-full rounded border border-veypri-ink/20 px-3 py-2 text-sm focus:border-veypri-green focus:outline-none focus:ring-1 focus:ring-veypri-green"
+          >
+            <option value="" disabled>
+              Choisir…
+            </option>
+            {GUADELOUPE_COMMUNES.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -209,7 +244,8 @@ export default function SignalementForm() {
         )}
         <p className="mt-1 text-xs text-veypri-ink/50">
           JPEG, PNG ou WebP — 5 Mo maximum. La date du signalement est
-          enregistrée automatiquement.
+          enregistrée automatiquement. Les visages présents sur la photo
+          sont automatiquement floutés.
         </p>
       </div>
 
@@ -219,6 +255,8 @@ export default function SignalementForm() {
         de la photo sont automatiquement supprimées avant l&apos;envoi. Votre
         signalement est publié anonymement.
       </div>
+
+      <TurnstileWidget />
 
       {errorMessage && (
         <p className="text-sm text-red-600" role="alert">

@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
-import { listUnverifiedSignalements, listFlaggedSignalements } from "@/lib/db";
+import {
+  listUnverifiedSignalements,
+  listFlaggedSignalements,
+  listPossibleDuplicates,
+} from "@/lib/db";
 import { rejectAction } from "./actions";
 
 export const metadata: Metadata = {
@@ -21,9 +25,10 @@ const priceFormatter = new Intl.NumberFormat("fr-FR", {
 });
 
 export default async function AdminPage() {
-  const [unverified, flagged] = await Promise.all([
+  const [unverified, flagged, duplicates] = await Promise.all([
     listUnverifiedSignalements(),
     listFlaggedSignalements(),
+    listPossibleDuplicates(),
   ]);
 
   return (
@@ -86,6 +91,51 @@ export default async function AdminPage() {
                       </button>
                     </form>
                   </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="mb-12">
+        <h2 className="mb-1 text-lg font-semibold text-veypri-ink">
+          Doublons possibles ({duplicates.length})
+        </h2>
+        <p className="mb-4 text-sm text-veypri-ink/60">
+          Photos dont l&apos;empreinte visuelle se ressemble fortement
+          (probable même photo resoumise). Détection automatique
+          approximative — à vérifier visuellement, aucune action
+          automatique n&apos;est prise.
+        </p>
+        {duplicates.length === 0 ? (
+          <p className="rounded border border-veypri-ink/10 bg-veypri-ink/[0.02] p-4 text-sm text-veypri-ink/50">
+            Aucun doublon probable détecté.
+          </p>
+        ) : (
+          <ul className="space-y-4">
+            {duplicates.map((group) => (
+              <li
+                key={group.signalement.id}
+                className="rounded-lg border border-veypri-ink/10 bg-white p-4"
+              >
+                <div className="flex flex-wrap gap-3">
+                  {[group.signalement, ...group.matches].map((s) => (
+                    <div key={s.id} className="w-24 text-center">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={s.photo_url}
+                        alt=""
+                        className="h-24 w-24 rounded border border-veypri-ink/10 object-cover"
+                      />
+                      <p className="mt-1 truncate text-xs text-veypri-ink/60">
+                        {s.magasin}
+                      </p>
+                      <p className="text-xs text-veypri-ink/40">
+                        {dateFormatter.format(new Date(s.created_at))}
+                      </p>
+                    </div>
+                  ))}
                 </div>
               </li>
             ))}
