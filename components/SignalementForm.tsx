@@ -13,6 +13,7 @@ export default function SignalementForm() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [photoError, setPhotoError] = useState<string | null>(null);
+  const [pendingReview, setPendingReview] = useState(false);
 
   function handlePhotoChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -58,6 +59,7 @@ export default function SignalementForm() {
         return;
       }
 
+      setPendingReview(payload?.signalement?.status === "pending_review");
       setStatus("success");
       formRef.current?.reset();
       setPhotoPreview(null);
@@ -75,10 +77,18 @@ export default function SignalementForm() {
         <p className="mb-4 text-lg font-semibold text-veypri-green">
           Merci, votre signalement anonyme a été enregistré.
         </p>
-        <p className="mb-6 text-sm text-veypri-ink/70">
-          Aucune information vous concernant n&apos;a été demandée ni
-          conservée.
-        </p>
+        {pendingReview ? (
+          <p className="mb-6 text-sm text-veypri-ink/70">
+            Il sera publié après une vérification rapide (métadonnées de la
+            photo non concluantes). Aucune information vous concernant
+            n&apos;a été demandée ni conservée.
+          </p>
+        ) : (
+          <p className="mb-6 text-sm text-veypri-ink/70">
+            Aucune information vous concernant n&apos;a été demandée ni
+            conservée.
+          </p>
+        )}
         <div className="flex flex-col justify-center gap-3 sm:flex-row">
           <a
             href="/signalements"

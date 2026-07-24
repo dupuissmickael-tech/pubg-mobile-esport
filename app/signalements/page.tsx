@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { listRecentSignalements, type Signalement } from "@/lib/db";
+import FlagButton from "@/components/FlagButton";
 
 export const metadata: Metadata = {
   title: "Signalements récents — VeyPri",
@@ -92,6 +93,9 @@ function SignalementCard({ signalement }: { signalement: Signalement }) {
             ? `Écart constaté : +${priceFormatter.format(ecart)} au-dessus du plafond`
             : "Prix conforme ou inférieur au plafond BQP déclaré"}
         </p>
+        <div className="mt-3">
+          <FlagButton id={signalement.id} />
+        </div>
       </div>
     </li>
   );
