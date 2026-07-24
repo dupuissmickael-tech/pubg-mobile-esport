@@ -216,7 +216,9 @@ export default function SignalementForm() {
 
       <div className="rounded border border-veypri-ink/10 bg-veypri-ink/[0.02] p-3 text-xs text-veypri-ink/60">
         Ce formulaire ne demande aucune information personnelle (ni nom, ni
-        email, ni compte). Votre signalement est publié anonymement.
+        email, ni compte). Les données de localisation et autres métadonnées
+        de la photo sont automatiquement supprimées avant l&apos;envoi. Votre
+        signalement est publié anonymement.
       </div>
 
       {errorMessage && (
