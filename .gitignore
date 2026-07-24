@@ -1,0 +1,30 @@
+# dependencies
+/node_modules
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# local env files
+.env*.local
+.env
+
+# sqlite database
+/data/*.db
+/data/*.db-*
+
+# uploaded photos (user content, not source)
+/uploads/*
+!/uploads/.gitkeep
+
+# misc
+.DS_Store
+*.log
+npm-debug.log*
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
