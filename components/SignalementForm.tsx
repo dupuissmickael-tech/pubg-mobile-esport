@@ -2,6 +2,7 @@
 
 import { useRef, useState, type FormEvent } from "react";
 import MagasinField from "@/components/MagasinField";
+import ProduitField from "@/components/ProduitField";
 import TurnstileWidget from "@/components/TurnstileWidget";
 import { PRODUCT_CATEGORIES, GUADELOUPE_COMMUNES } from "@/lib/constants";
 
@@ -16,6 +17,8 @@ export default function SignalementForm() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [photoError, setPhotoError] = useState<string | null>(null);
+  const [categorie, setCategorie] = useState("");
+  const [formKey, setFormKey] = useState(0);
 
   function handlePhotoChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -63,6 +66,8 @@ export default function SignalementForm() {
       setStatus("success");
       formRef.current?.reset();
       setPhotoPreview(null);
+      setCategorie("");
+      setFormKey((k) => k + 1);
     } catch {
       setErrorMessage(
         "Impossible d'envoyer le signalement. Vérifiez votre connexion et réessayez."
@@ -106,23 +111,9 @@ export default function SignalementForm() {
       onSubmit={handleSubmit}
       className="space-y-6 rounded-lg border border-veypri-ink/10 bg-white p-6 shadow-sm"
     >
-      <MagasinField />
+      <MagasinField key={`magasin-${formKey}`} />
 
-      <div>
-        <label htmlFor="produit" className="mb-1 block text-sm font-medium text-veypri-ink">
-          Nom du produit
-        </label>
-        <input
-          id="produit"
-          name="produit"
-          type="text"
-          required
-          minLength={2}
-          maxLength={200}
-          placeholder="Ex : Lait 1L demi-écrémé"
-          className="w-full rounded border border-veypri-ink/20 px-3 py-2 text-sm focus:border-veypri-green focus:outline-none focus:ring-1 focus:ring-veypri-green"
-        />
-      </div>
+      <ProduitField key={`produit-${formKey}`} onCategorieHint={setCategorie} />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
@@ -133,7 +124,8 @@ export default function SignalementForm() {
             id="categorie"
             name="categorie"
             required
-            defaultValue=""
+            value={categorie}
+            onChange={(e) => setCategorie(e.target.value)}
             className="w-full rounded border border-veypri-ink/20 px-3 py-2 text-sm focus:border-veypri-green focus:outline-none focus:ring-1 focus:ring-veypri-green"
           >
             <option value="" disabled>
@@ -145,6 +137,10 @@ export default function SignalementForm() {
               </option>
             ))}
           </select>
+          <p className="mt-1 text-xs text-veypri-ink/50">
+            Pré-remplie automatiquement pour les produits de la liste BQP —
+            modifiable.
+          </p>
         </div>
 
         <div>

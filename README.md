@@ -196,6 +196,12 @@ d'environnement — voir `.env.example`.
 ---
 
 *Note : le prix plafond BQP est saisi par la personne qui signale (affiché
-légalement en rayon), il ne provient pas d'une base officielle centralisée.
-Liste des communes de Guadeloupe et catégories de produits établies de
-mémoire (voir `lib/constants.ts`) — à vérifier/compléter si besoin.*
+légalement en rayon) — l'Annexe 1 de l'Accord de Modération de Prix
+Guadeloupe 2024 (source de `PRODUCT_CATEGORIES` et `BQP_PRODUCTS` dans
+`lib/constants.ts`) liste la composition du panier (105 produits, familles,
+quantités nominales) mais ne donne aucun prix par produit, seulement deux
+prix globaux de panier (314 € et 60 €) — il n'existe donc pas de base de
+prix officielle centralisée par produit à interroger. Liste des communes
+de Guadeloupe établie de mémoire (à vérifier/compléter si besoin) ; liste
+des produits et catégories extraite du document officiel fourni — à mettre
+à jour si un nouvel accord est publié.*
