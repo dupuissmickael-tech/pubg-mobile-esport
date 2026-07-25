@@ -127,7 +127,7 @@ export interface UploadedPhoto {
 /**
  * En production (Vercel), le système de fichiers est en lecture seule :
  * les photos sont envoyées à Vercel Blob. En local, sans
- * BLOB_READ_WRITE_TOKEN, on écrit sur disque et on sert via
+ * BLOB2_READ_WRITE_TOKEN, on écrit sur disque et on sert via
  * /api/uploads/[filename] — suffisant pour le développement, pas pour la prod.
  */
 export async function saveUploadedPhoto(file: File): Promise<UploadedPhoto> {
@@ -152,11 +152,12 @@ export async function saveUploadedPhoto(file: File): Promise<UploadedPhoto> {
 
   const hash = await computePerceptualHash(finalBuffer).catch(() => "");
 
-  if (process.env.BLOB_READ_WRITE_TOKEN) {
+  if (process.env.BLOB2_READ_WRITE_TOKEN) {
     const { put } = await import("@vercel/blob");
     const blob = await put(filename, finalBuffer, {
       access: "public",
       contentType: file.type,
+      token: process.env.BLOB2_READ_WRITE_TOKEN,
     });
     return { url: blob.url, authentic, reason, hash };
   }

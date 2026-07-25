@@ -193,7 +193,7 @@ visages, actuellement retirés — voir section dédiée ci-dessus)
 | | Local (par défaut) | Production (Vercel) |
 |---|---|---|
 | Base de données | fichier SQLite local (`./data/veypri.db`) via le même client libSQL | Turso (`TURSO_DATABASE_URL` + `TURSO_AUTH_TOKEN`) |
-| Photos | disque local (`./uploads`), servies par `/api/uploads/[filename]` | Vercel Blob (`BLOB_READ_WRITE_TOKEN`, fourni automatiquement par Vercel) |
+| Photos | disque local (`./uploads`), servies par `/api/uploads/[filename]` | Vercel Blob (`BLOB2_READ_WRITE_TOKEN`, store public, fourni automatiquement par Vercel) |
 | CAPTCHA | désactivé (pas de clé) | Turnstile actif si `NEXT_PUBLIC_TURNSTILE_SITE_KEY` + `TURNSTILE_SECRET_KEY` configurées |
 
 Le code bascule automatiquement selon la présence de ces variables
