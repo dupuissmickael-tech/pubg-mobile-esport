@@ -31,8 +31,14 @@ plafond officiel du Bouclier Qualité Prix (BQP).
   badge métadonnées non vérifiées, doublons possibles, compteur de
   signalements suspects
 - CAPTCHA Cloudflare Turnstile sur le formulaire (anti-bot)
-- En-têtes de sécurité HTTP (CSP, X-Frame-Options, X-Content-Type-Options,
-  Referrer-Policy, Permissions-Policy)
+- En-têtes de sécurité HTTP posés par `middleware.ts` (CSP par nonce
+  généré à chaque requête + `strict-dynamic`, X-Frame-Options,
+  X-Content-Type-Options, Referrer-Policy, Permissions-Policy). Le nonce
+  est lu dans `app/layout.tsx` (`headers()`), ce qui force tout le site
+  en rendu dynamique — nécessaire pour que le nonce embarqué dans le HTML
+  corresponde toujours à celui de l'en-tête CSP ; sans ça, les pages
+  encore prérendues statiquement embarqueraient un nonce périmé et
+  casseraient la CSP en production (bug rencontré et corrigé)
 - Bouton « Signaler comme douteux » sur chaque entrée publique
 - Limite de 3 signalements par heure et par navigateur (anti-spam)
 - Aucun outil de tracking/analytics (voir détail plus bas)
