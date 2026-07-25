@@ -11,7 +11,7 @@ const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 type Status = "idle" | "submitting" | "success" | "error";
 
-export default function SignalementForm() {
+export default function SignalementForm({ nonce }: { nonce?: string }) {
   const formRef = useRef<HTMLFormElement>(null);
   const [status, setStatus] = useState<Status>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -253,7 +253,7 @@ export default function SignalementForm() {
         signalement est publié anonymement.
       </div>
 
-      <TurnstileWidget />
+      <TurnstileWidget nonce={nonce} />
 
       {errorMessage && (
         <p className="text-sm text-red-600" role="alert">
