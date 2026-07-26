@@ -17,11 +17,24 @@ export default function CommentCaMarchePage() {
           <h2 className="mb-2 text-base font-semibold text-veypri-ink">
             1. Le Bouclier Qualité Prix, en bref
           </h2>
+          <p className="mb-3">
+            Le Bouclier Qualité Prix (BQP) est un accord négocié chaque année
+            entre l&apos;État et les distributeurs volontaires de
+            Guadeloupe. Contrairement à une idée reçue, <strong>il ne fixe
+            pas de prix plafond pour chaque produit pris individuellement</strong> :
+            il plafonne uniquement le prix total d&apos;un panier de 105
+            produits de première nécessité (306 € pour l&apos;ensemble du
+            panier en 2025).
+          </p>
           <p>
-            Le Bouclier Qualité Prix (BQP) est un dispositif réglementaire qui
-            plafonne le prix d&apos;une liste de produits de première
-            nécessité en Guadeloupe. Chaque magasin concerné doit légalement
-            afficher cette liste en rayon.
+            Chaque magasin participant reste libre de répartir ce budget
+            comme il le souhaite entre les produits du panier. C&apos;est
+            donc le magasin lui-même — pas un texte officiel — qui choisit
+            le prix affiché en rayon sous le logo BQP pour chaque produit.
+            Ce que VeyPri permet de signaler, c&apos;est l&apos;écart entre
+            ce prix affiché par le magasin et le prix réellement pratiqué,
+            pas une violation d&apos;un plafond officiel par produit qui
+            n&apos;existe dans aucun document.
           </p>
         </section>
 
@@ -35,9 +48,9 @@ export default function CommentCaMarchePage() {
               Faire un signalement
             </Link>
             , vous indiquez le magasin, le produit, le prix observé en rayon,
-            le prix plafond BQP affiché à côté, et vous joignez une photo de
-            l&apos;étiquette comme preuve. Aucune information personnelle
-            n&apos;est demandée.
+            le prix que le magasin affiche à côté sous le logo BQP, et vous
+            joignez une photo de l&apos;étiquette comme preuve. Aucune
+            information personnelle n&apos;est demandée.
           </p>
           <p>
             Avant l&apos;envoi, la photo est automatiquement retouchée :
@@ -59,7 +72,7 @@ export default function CommentCaMarchePage() {
               liste publique
             </Link>
             , présenté de façon factuelle : date, magasin, produit, prix
-            observé, prix plafond. Un système automatique et discret aide à
+            observé, prix affiché sous le logo BQP. Un système automatique et discret aide à
             repérer les signalements douteux ou les doublons pour la
             modération, sans jamais retarder la publication d&apos;un
             signalement authentique.

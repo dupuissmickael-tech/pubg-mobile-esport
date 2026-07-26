@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
   if (!categorie) errors.push("Merci de choisir une catégorie de produit valide.");
   if (!commune) errors.push("Merci de choisir une commune valide.");
   if (prixObserve === null) errors.push("Le prix observé doit être un nombre positif (ex : 3.50).");
-  if (prixPlafond === null) errors.push("Le prix plafond BQP doit être un nombre positif (ex : 2.90).");
+  if (prixPlafond === null) errors.push("Le prix affiché en rayon sous le logo BQP doit être un nombre positif (ex : 2.90).");
   if (!(photo instanceof File) || photo.size === 0) {
     errors.push("Une photo de l'étiquette est requise comme preuve.");
   }

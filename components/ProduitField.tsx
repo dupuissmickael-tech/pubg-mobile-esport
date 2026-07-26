@@ -83,8 +83,9 @@ export default function ProduitField({
 
       <p className="mt-1 text-xs text-veypri-ink/50">
         Liste issue de l&apos;Annexe 1 du Bouclier Qualité Prix 2024 (105
-        produits). Le prix plafond n&apos;y figure pas : il reste à
-        renseigner ci-dessous, tel qu&apos;affiché en rayon.
+        produits). Il n&apos;existe pas de prix officiel par produit : le
+        prix que chaque magasin affiche en rayon reste à renseigner
+        ci-dessous.
       </p>
     </div>
   );

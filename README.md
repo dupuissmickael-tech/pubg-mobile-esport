@@ -2,12 +2,20 @@
 
 Application citoyenne permettant aux habitants de Guadeloupe de signaler,
 de façon anonyme, un écart entre le prix observé en magasin et le prix
-plafond officiel du Bouclier Qualité Prix (BQP).
+que ce magasin affiche lui-même en rayon sous le logo du Bouclier Qualité
+Prix (BQP). **Important** : le BQP ne fixe pas de prix plafond par
+produit — seulement un prix plafond pour le panier total (105 produits
+pour 306 € en 2025, négocié chaque année entre l'État et les distributeurs
+volontaires). Le prix affiché sous le logo BQP en rayon est celui que
+chaque magasin choisit pour respecter son engagement de panier global, pas
+un plafond officiel individuel. Voir « Comment ça marche » dans
+l'application pour le détail.
 
 ## Fonctionnalités
 
 - Formulaire de signalement (magasin — liste déroulante + ajout libre,
-  produit, catégorie, commune, prix observé, prix plafond BQP déclaré,
+  produit, catégorie, commune, prix observé, prix affiché en rayon sous
+  le logo BQP,
   photo de l'étiquette comme preuve, date automatique)
 - Liste publique des signalements récents, filtrable par catégorie et
   commune, présentation factuelle
@@ -201,13 +209,18 @@ d'environnement — voir `.env.example`.
 
 ---
 
-*Note : le prix plafond BQP est saisi par la personne qui signale (affiché
-légalement en rayon) — l'Annexe 1 de l'Accord de Modération de Prix
-Guadeloupe 2024 (source de `PRODUCT_CATEGORIES` et `BQP_PRODUCTS` dans
-`lib/constants.ts`) liste la composition du panier (105 produits, familles,
-quantités nominales) mais ne donne aucun prix par produit, seulement deux
-prix globaux de panier (314 € et 60 €) — il n'existe donc pas de base de
-prix officielle centralisée par produit à interroger. Liste des communes
-de Guadeloupe établie de mémoire (à vérifier/compléter si besoin) ; liste
-des produits et catégories extraite du document officiel fourni — à mettre
-à jour si un nouvel accord est publié.*
+*Note : le BQP ne plafonne pas le prix de chaque produit individuellement,
+seulement le prix total du panier (105 produits pour 314 € + 60 € pour les
+6 produits multimédia/automobile selon l'Accord de Modération de Prix
+Guadeloupe 2024, source de `PRODUCT_CATEGORIES` et `BQP_PRODUCTS` dans
+`lib/constants.ts` — ce montant total est renégocié chaque année, 306 €
+pour l'accord 2025 selon les informations les plus récentes). Chaque
+magasin répartit ce budget comme il le souhaite entre les produits du
+panier et affiche en rayon le prix qu'il a lui-même choisi pour chacun ;
+c'est ce prix, saisi par la personne qui signale tel qu'affiché en rayon,
+qu'enregistre le champ « prix affiché sous le logo BQP » du formulaire —
+il n'existe donc pas de base de prix officielle centralisée par produit à
+interroger. Liste des communes de Guadeloupe établie de mémoire (à
+vérifier/compléter si besoin) ; liste des produits et catégories extraite
+du document officiel fourni (accord 2024) — à mettre à jour si un nouvel
+accord est publié.*

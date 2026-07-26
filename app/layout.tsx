@@ -7,7 +7,7 @@ import Footer from "@/components/Footer";
 export const metadata: Metadata = {
   title: "VeyPri — Veille citoyenne des prix BQP en Guadeloupe",
   description:
-    "Signalez, de façon anonyme, un écart entre le prix observé en magasin et le prix plafond du Bouclier Qualité Prix (BQP) en Guadeloupe.",
+    "Signalez, de façon anonyme, un écart entre le prix observé en magasin et le prix affiché en rayon sous le logo du Bouclier Qualité Prix (BQP) en Guadeloupe.",
 };
 
 export default async function RootLayout({

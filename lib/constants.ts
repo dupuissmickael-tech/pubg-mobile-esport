@@ -37,12 +37,15 @@ export type ProductCategory = (typeof PRODUCT_CATEGORIES)[number];
  * suggestions dans le formulaire de signalement — n'importe quel autre
  * produit reste saisissable librement.
  *
- * Important : ce document liste la COMPOSITION du panier (produit,
- * famille, quantité nominale) mais ne donne aucun prix plafond par
- * produit — seulement deux prix globaux de panier (314 € pour les ~105
- * produits, 60 € pour les 6 produits multimédia/automobile). Le prix
- * plafond BQP par produit reste donc saisi par le citoyen déclarant,
- * comme affiché en rayon.
+ * Important : le BQP ne fixe aucun prix par produit. Ce document liste la
+ * COMPOSITION du panier (produit, famille, quantité nominale) et seulement
+ * deux prix globaux de panier plafonnés (314 € pour les ~105 produits, 60 €
+ * pour les 6 produits multimédia/automobile, chiffres 2024). Chaque
+ * magasin répartit ce budget comme il le souhaite entre les produits et
+ * affiche en rayon le prix qu'il a lui-même choisi — c'est ce prix, saisi
+ * par le citoyen déclarant tel qu'affiché en rayon, qui est enregistré
+ * dans le champ prix_plafond_bqp (nom de champ hérité, pas un plafond
+ * officiel par produit).
  */
 export interface BqpProduct {
   nom: string;

@@ -193,7 +193,7 @@ export default function SignalementForm({ nonce }: { nonce?: string }) {
             htmlFor="prix_plafond_bqp"
             className="mb-1 block text-sm font-medium text-veypri-ink"
           >
-            Prix plafond BQP affiché en magasin (€)
+            Prix affiché en rayon sous le logo BQP (€)
           </label>
           <input
             id="prix_plafond_bqp"
@@ -208,8 +208,9 @@ export default function SignalementForm({ nonce }: { nonce?: string }) {
             className="w-full rounded border border-veypri-ink/20 px-3 py-2 text-sm focus:border-veypri-green focus:outline-none focus:ring-1 focus:ring-veypri-green"
           />
           <p className="mt-1 text-xs text-veypri-ink/50">
-            Cette information doit légalement être affichée en rayon (liste
-            BQP).
+            C&apos;est le prix que le magasin choisit lui-même d&apos;afficher
+            sous le logo BQP, pas un plafond officiel fixé produit par
+            produit — voir « Comment ça marche ».
           </p>
         </div>
       </div>

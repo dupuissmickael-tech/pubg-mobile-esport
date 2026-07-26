@@ -56,7 +56,14 @@ export default function MentionsLegalesPage() {
             VeyPri est une initiative citoyenne indépendante, non affiliée à
             l&apos;État, à la préfecture de Guadeloupe ou à la DGCCRF. Le site
             permet de publier, de façon anonyme, des observations de prix en
-            magasin comparées au prix plafond du Bouclier Qualité Prix.
+            magasin comparées au prix que chaque magasin affiche en rayon
+            sous le logo du Bouclier Qualité Prix (BQP) — un dispositif qui
+            plafonne le prix total d&apos;un panier de produits, pas le prix
+            de chaque produit pris individuellement (voir «{" "}
+            <a href="/comment-ca-marche" className="underline">
+              Comment ça marche
+            </a>{" "}
+            »).
           </p>
         </section>
 

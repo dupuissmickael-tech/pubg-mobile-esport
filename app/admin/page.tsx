@@ -71,7 +71,7 @@ export default async function AdminPage() {
                   </div>
                   <p className="text-veypri-ink">
                     <strong>{s.magasin}</strong> — {s.produit} —{" "}
-                    {priceFormatter.format(s.prix_observe)} (plafond{" "}
+                    {priceFormatter.format(s.prix_observe)} (prix rayon BQP :{" "}
                     {priceFormatter.format(s.prix_plafond_bqp)})
                   </p>
                   <p className="mt-1 text-xs text-veypri-ink/60">

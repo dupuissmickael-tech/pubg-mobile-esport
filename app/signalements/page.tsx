@@ -101,7 +101,7 @@ function SignalementCard({ signalement }: { signalement: Signalement }) {
           Prix relevé le <strong>{date}</strong> chez{" "}
           <strong>{magasin}</strong> : <strong>{produit}</strong> à{" "}
           <strong>{priceFormatter.format(prix_observe)}</strong> — prix
-          plafond BQP : <strong>{priceFormatter.format(prix_plafond_bqp)}</strong>
+          affiché sous le logo BQP : <strong>{priceFormatter.format(prix_plafond_bqp)}</strong>
         </p>
         <p
           className={`mt-2 inline-block rounded px-2 py-1 text-xs font-medium ${
@@ -111,8 +111,8 @@ function SignalementCard({ signalement }: { signalement: Signalement }) {
           }`}
         >
           {ecart > 0
-            ? `Écart constaté : +${priceFormatter.format(ecart)} au-dessus du plafond`
-            : "Prix conforme ou inférieur au plafond BQP déclaré"}
+            ? `Écart constaté : +${priceFormatter.format(ecart)} entre le prix observé et le prix affiché sous le logo BQP`
+            : "Prix observé conforme au prix affiché sous le logo BQP"}
         </p>
         <div className="mt-3">
           <FlagButton id={signalement.id} />
