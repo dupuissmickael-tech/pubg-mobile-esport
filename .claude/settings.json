@@ -1,0 +1,13 @@
+{
+  "extraKnownMarketplaces": {
+    "vibeflow-os": {
+      "source": {
+        "source": "github",
+        "repo": "picmakpro/vibeflow-os"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "vibeflow@vibeflow-os": true
+  }
+}
